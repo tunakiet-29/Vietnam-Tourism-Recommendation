@@ -1,83 +1,30 @@
-import { useState } from "react";
+import { Routes, Route } from "react-router-dom";
+
+import MainLayout from "./layouts/MainLayout";
+
+import Home from "./pages/Home";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import Explore from "./pages/Explore";
+import TourDetail from "./pages/TourDetail";
+import Recommendations from "./pages/Recommendations";
+import Bookings from "./pages/Bookings";
+import Profile from "./pages/Profile";
 
 function App() {
-  const [history, setHistory] = useState("");
-  const [recommendations, setRecommendations] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  const handleRecommend = async () => {
-    const destinations = history
-      .split(",")
-      .map((item) => item.trim())
-      .filter(Boolean);
-
-    if (destinations.length === 0) {
-      setError("Vui lòng nhập lịch sử điểm đến.");
-      return;
-    }
-
-    setLoading(true);
-    setError("");
-    setRecommendations([]);
-
-    try {
-      const response = await fetch("http://127.0.0.1:8000/recommend", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          history: destinations,
-          top_k: 5,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Không thể gọi API recommendation.");
-      }
-
-      const data = await response.json();
-
-      setRecommendations(data.recommendations);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
-    <div>
-      <h1>Vietnam Tourism Recommendation</h1>
-
-      <input
-        type="text"
-        value={history}
-        onChange={(e) => setHistory(e.target.value)}
-        placeholder="Ví dụ: Đà Nẵng, TP.HCM, Nha Trang"
-      />
-
-      <button onClick={handleRecommend}>
-        Recommend
-      </button>
-
-      {loading && <p>Đang xử lý...</p>}
-
-      {error && <p>{error}</p>}
-
-      {recommendations.length > 0 && (
-        <div>
-          <h2>Recommended Destinations</h2>
-
-          {recommendations.map((item, index) => (
-            <div key={item.destination}>
-              {index + 1}. {item.destination}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+    <Routes>
+      <Route element={<MainLayout />}>
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/explore" element={<Explore />} />
+        <Route path="/tours/:id" element={<TourDetail />} />
+        <Route path="/recommendations" element={<Recommendations />} />
+        <Route path="/bookings" element={<Bookings />} />
+        <Route path="/profile" element={<Profile />} />
+      </Route>
+    </Routes>
   );
 }
 

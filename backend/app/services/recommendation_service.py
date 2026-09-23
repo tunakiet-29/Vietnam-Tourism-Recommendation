@@ -4,41 +4,18 @@ import pickle
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BACKEND_DIR = Path(__file__).resolve().parents[2]
+
 CHECKPOINT_PATH = (
-    BASE_DIR
+    BACKEND_DIR
     / "models"
     / "Vietnam_TourBookings_FPGrowth_Recommendation_V1_Checkpoint.pkl"
 )
 
 
-class RecommendationRequest(BaseModel):
-    history: list[str] = Field(..., min_length=1, description="Ordered travel history")
-    top_k: int = Field(default=5, ge=1, le=20)
-
-
-class RecommendationItem(BaseModel):
-    destination: str
-    score: float
-    matched_pattern_count: int
-    max_support: float
-
-
-class RecommendationResponse(BaseModel):
-    status: str
-    algorithm: str
-    history: list[str]
-    pattern_used: list[str]
-    pattern_length: int
-    fallback: bool
-    recommendations: list[RecommendationItem]
-
-
 def load_checkpoint() -> dict[str, Any]:
+    """Load and validate the FP-Growth recommendation checkpoint."""
     if not CHECKPOINT_PATH.exists():
         raise FileNotFoundError(
             "FP-Growth checkpoint was not found. "
@@ -57,9 +34,13 @@ def load_checkpoint() -> dict[str, Any]:
         "fpgrowth_filtered",
         "recommendation_policy",
     }
+
     missing = required_keys - checkpoint.keys()
+
     if missing:
-        raise KeyError(f"Checkpoint is missing required keys: {sorted(missing)}")
+        raise KeyError(
+            f"Checkpoint is missing required keys: {sorted(missing)}"
+        )
 
     if checkpoint["algorithm"] != "FP-Growth":
         raise ValueError(
@@ -74,6 +55,7 @@ FPGROWTH_FILTERED = CHECKPOINT["fpgrowth_filtered"]
 
 
 def parse_itemset(itemset_string: str) -> set[str]:
+    """Convert an itemset string such as '{Đà Nẵng, Huế}' into a set."""
     return {
         item.strip()
         for item in itemset_string.strip("{}").split(",")
@@ -81,7 +63,24 @@ def parse_itemset(itemset_string: str) -> set[str]:
     }
 
 
-def recommend_fpgrowth(history: list[str], top_k: int = 5) -> dict[str, Any]:
+def recommend_fpgrowth(
+    history: list[str],
+    top_k: int = 5,
+) -> dict[str, Any]:
+    """
+    Generate recommendations using the locked FP-Growth policy.
+
+    Strategy:
+    1. Try the full history pattern.
+    2. If no result, shorten to a suffix pattern.
+    3. Continue until pattern length 1.
+    4. Exclude destinations already present in the full history.
+    5. Rank by:
+       - total support
+       - matched pattern count
+       - maximum support
+       - destination name
+    """
     cleaned_history = [
         item.strip()
         for item in history
@@ -109,6 +108,7 @@ def recommend_fpgrowth(history: list[str], top_k: int = 5) -> dict[str, Any]:
 
         for _, row in FPGROWTH_FILTERED.iterrows():
             items = parse_itemset(row["itemset"])
+
             if pattern_set.issubset(items) and len(items) > pattern_length:
                 matched_rows.append(
                     {
@@ -121,11 +121,12 @@ def recommend_fpgrowth(history: list[str], top_k: int = 5) -> dict[str, Any]:
         if not matched_rows:
             continue
 
-        # Aggregate candidate scores using the same locked demo policy.
+        # Aggregate candidate scores using the locked recommendation policy.
         candidates: dict[str, dict[str, Any]] = {}
 
         for matched in matched_rows:
             items = parse_itemset(matched["itemset"])
+
             for destination in items - history_set:
                 entry = candidates.setdefault(
                     destination,
@@ -136,10 +137,12 @@ def recommend_fpgrowth(history: list[str], top_k: int = 5) -> dict[str, Any]:
                         "max_support": 0.0,
                     },
                 )
+
                 entry["score"] += matched["support"]
                 entry["matched_pattern_count"] += 1
                 entry["max_support"] = max(
-                    entry["max_support"], matched["support"]
+                    entry["max_support"],
+                    matched["support"],
                 )
 
         if not candidates:
@@ -174,31 +177,8 @@ def recommend_fpgrowth(history: list[str], top_k: int = 5) -> dict[str, Any]:
     }
 
 
-app = FastAPI(
-    title="Vietnam Tourism Recommendation API",
-    version="1.0.0",
-    description="FP-Growth recommendation service with suffix pattern backoff.",
-)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-
-@app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok", "algorithm": "FP-Growth"}
-
-
-@app.get("/model-info")
-def model_info() -> dict[str, Any]:
+def get_model_info() -> dict[str, Any]:
+    """Return metadata about the loaded FP-Growth recommendation model."""
     return {
         "stage": CHECKPOINT["stage"],
         "algorithm": CHECKPOINT["algorithm"],
@@ -207,16 +187,3 @@ def model_info() -> dict[str, Any]:
         "top_k": CHECKPOINT.get("top_k"),
         "frequent_itemset_count": int(len(FPGROWTH_FILTERED)),
     }
-
-
-@app.post("/recommend", response_model=RecommendationResponse)
-def recommend(request: RecommendationRequest) -> RecommendationResponse:
-    try:
-        result = recommend_fpgrowth(request.history, request.top_k)
-    except Exception as exc:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Recommendation failed: {exc}",
-        ) from exc
-
-    return RecommendationResponse(algorithm="FP-Growth", **result)

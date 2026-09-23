@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 
-from app.services.data_service import get_destinations
+from app.services.destination_service import get_destinations
 
 
 router = APIRouter(

@@ -1,53 +1,18 @@
-from pathlib import Path
+from __future__ import annotations
 
-import json
-import pandas as pd
-
-
-BACKEND_DIR = Path(__file__).resolve().parents[2]
-
-DATASET_PATH = (
-    BACKEND_DIR
-    / "data"
-    / "processed"
-    / "Vietnam_TourBookings_Filtered_V1.csv"
+from app.repositories.destination_repository import (
+    load_destination_catalog,
+    load_travel_data,
 )
-
-CATALOG_PATH = (
-    BACKEND_DIR
-    / "data"
-    / "catalog"
-    / "destinations.json"
-)
-
-
-def load_travel_data() -> pd.DataFrame:
-    if not DATASET_PATH.exists():
-        raise FileNotFoundError(
-            f"Dataset not found: {DATASET_PATH}"
-        )
-
-    return pd.read_csv(DATASET_PATH)
-
-
-def load_destination_catalog() -> list[dict]:
-    if not CATALOG_PATH.exists():
-        raise FileNotFoundError(
-            f"Destination catalog not found: {CATALOG_PATH}"
-        )
-
-    with CATALOG_PATH.open("r", encoding="utf-8") as file:
-        catalog = json.load(file)
-
-    if not isinstance(catalog, list):
-        raise TypeError(
-            "Destination catalog must contain a JSON array."
-        )
-
-    return catalog
 
 
 def get_destinations() -> list[dict]:
+    """
+    Build destination data for the API.
+
+    Combines destination metadata from the catalog
+    with booking and customer statistics from the dataset.
+    """
     df = load_travel_data()
     catalog = load_destination_catalog()
 

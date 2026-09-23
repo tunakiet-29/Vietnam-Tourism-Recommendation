@@ -1,13 +1,16 @@
 import { Link } from "react-router-dom";
+import { destinationImages } from "../../data/destinationImages";
 
 function DestinationCard({ destination }) {
+  const image = destinationImages[destination.id];
+
   return (
     <Link
-      to="/explore"
+      to={`/explore?destination=${destination.id}`}
       className="group relative h-[390px] overflow-hidden rounded-2xl"
     >
       <img
-        src={destination.image}
+        src={image}
         alt={destination.name}
         className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105"
       />
@@ -16,7 +19,7 @@ function DestinationCard({ destination }) {
 
       <div className="absolute bottom-6 left-6 text-white">
         <p className="text-xs uppercase tracking-widest text-white/60">
-          {destination.location}
+          {destination.region}
         </p>
 
         <h3 className="mt-2 text-2xl font-semibold">

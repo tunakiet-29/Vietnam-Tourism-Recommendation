@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.routes.destinations import router as destinations_router
 from app.routes.recommendations import router as recommendations_router
 from app.services.recommendation_service import get_model_info
-
+from app.routes.api_v1 import router as api_v1_router
 
 app = FastAPI(
     title="Vietnam Tourism Recommendation API",
@@ -31,7 +31,7 @@ app.add_middleware(
 
 app.include_router(destinations_router)
 app.include_router(recommendations_router)
-
+app.include_router(api_v1_router)
 
 @app.get("/health")
 def health() -> dict[str, str]:

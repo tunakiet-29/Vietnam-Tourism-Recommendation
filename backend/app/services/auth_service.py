@@ -7,8 +7,7 @@ from app.repositories.user_repository import (
     get_user_by_email,
 )
 from app.schemas.user import UserCreate
-
-
+from app.core.security import create_access_token, hash_password, verify_password
 def register_user(
     db: Session,
     user_data: UserCreate,
@@ -54,3 +53,18 @@ def authenticate_user(
         return None
 
     return user
+def login_user(
+    db: Session,
+    email: str,
+    password: str,
+) -> str:
+    user = authenticate_user(
+        db,
+        email,
+        password,
+    )
+
+    if user is None:
+        raise ValueError("Invalid email or password.")
+
+    return create_access_token(user.id)

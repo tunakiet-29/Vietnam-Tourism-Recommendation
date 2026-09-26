@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
 from app.schemas.recommendation import (
     RecommendationRequest,
@@ -13,7 +13,8 @@ from app.services.recommendation_service import (
     get_model_info,
     recommend_fpgrowth,
 )
-
+from app.core.database import get_db
+from sqlalchemy.orm import Session
 
 router = APIRouter(
     prefix="/api/v1",
@@ -35,21 +36,16 @@ def model_info() -> dict[str, Any]:
 
 
 @router.get("/destinations")
-def list_destinations() -> dict[str, Any]:
-    try:
-        destinations = get_destinations()
+def list_destinations(
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    destinations = get_destinations(db)
 
-        return {
-            "status": "SUCCESS",
-            "count": len(destinations),
-            "destinations": destinations,
-        }
-
-    except FileNotFoundError as exc:
-        raise HTTPException(
-            status_code=500,
-            detail=str(exc),
-        ) from exc
+    return {
+        "status": "SUCCESS",
+        "count": len(destinations),
+        "destinations": destinations,
+    }
 
 
 @router.post(

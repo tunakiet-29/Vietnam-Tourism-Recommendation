@@ -1,49 +1,25 @@
 from __future__ import annotations
 
-import json
-from pathlib import Path
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
-import pandas as pd
-
-
-BACKEND_DIR = Path(__file__).resolve().parents[2]
-
-DATASET_PATH = (
-    BACKEND_DIR
-    / "data"
-    / "processed"
-    / "Vietnam_TourBookings_Filtered_V1.csv"
-)
-
-CATALOG_PATH = (
-    BACKEND_DIR
-    / "data"
-    / "catalog"
-    / "destinations.json"
-)
+from app.models.destination import Destination
 
 
-def load_travel_data() -> pd.DataFrame:
-    """Load processed travel booking data."""
-    if not DATASET_PATH.exists():
-        raise FileNotFoundError(
-            f"Processed travel dataset was not found: {DATASET_PATH}"
-        )
+def get_all_destinations(
+    db: Session,
+) -> list[Destination]:
+    statement = (
+        select(Destination)
+        .where(Destination.is_active.is_(True))
+        .order_by(Destination.name)
+    )
 
-    return pd.read_csv(DATASET_PATH)
+    return list(db.scalars(statement).all())
 
 
-def load_destination_catalog() -> list[dict]:
-    """Load destination metadata from the catalog."""
-    if not CATALOG_PATH.exists():
-        raise FileNotFoundError(
-            f"Destination catalog was not found: {CATALOG_PATH}"
-        )
-
-    with CATALOG_PATH.open("r", encoding="utf-8") as file:
-        catalog = json.load(file)
-
-    if not isinstance(catalog, list):
-        raise TypeError("Destination catalog must be a list.")
-
-    return catalog
+def get_destination_by_id(
+    db: Session,
+    destination_id: str,
+) -> Destination | None:
+    return db.get(Destination, destination_id)

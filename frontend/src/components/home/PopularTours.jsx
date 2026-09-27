@@ -1,8 +1,55 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+
 import TourCard from "./TourCard";
-import { tours } from "../../data/homeData";
+import { getTours } from "../../services/api";
+import { destinationImages } from "../../data/destinationImages";
 
 function PopularTours() {
+  const [tours, setTours] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    async function fetchTours() {
+      try {
+        setLoading(true);
+        setError("");
+
+        const data = await getTours();
+
+        // Keep the same 3 destinations shown in the current homepage.
+        const popularDestinationIds = [
+          "da-nang",
+          "phu-quoc",
+          "da-lat",
+        ];
+
+        const selectedTours = popularDestinationIds
+          .map((destinationId) =>
+            data.find(
+              (tour) =>
+                tour.destination_id === destinationId,
+            ),
+          )
+          .filter(Boolean)
+          .map((tour) => ({
+            ...tour,
+            image:
+              destinationImages[tour.destination_id] || "",
+          }));
+
+        setTours(selectedTours);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchTours();
+  }, []);
+
   return (
     <section className="mx-auto w-[calc(100%-40px)] max-w-7xl py-24 lg:w-[calc(100%-80px)] lg:py-32">
       <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
@@ -28,11 +75,33 @@ function PopularTours() {
         </Link>
       </div>
 
-      <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {tours.map((tour) => (
-          <TourCard key={tour.title} tour={tour} />
-        ))}
-      </div>
+      {loading && (
+        <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3].map((item) => (
+            <div
+              key={item}
+              className="h-[560px] animate-pulse rounded-2xl bg-zinc-100"
+            />
+          ))}
+        </div>
+      )}
+
+      {error && (
+        <div className="mt-10 rounded-2xl border border-red-200 bg-red-50 p-5 text-red-600">
+          Failed to load popular tours: {error}
+        </div>
+      )}
+
+      {!loading && !error && (
+        <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {tours.map((tour) => (
+            <TourCard
+              key={tour.id}
+              tour={tour}
+            />
+          ))}
+        </div>
+      )}
     </section>
   );
 }

@@ -58,3 +58,40 @@ def get_travel_history_by_user(
     )
 
     return list(db.scalars(statement).all())
+
+def create_booking(
+    db: Session,
+    *,
+    user_id: int,
+    tour_id: int,
+    schedule_id: int,
+    number_of_guests: int,
+    total_amount,
+) -> Booking:
+    booking = Booking(
+        user_id=user_id,
+        tour_id=tour_id,
+        schedule_id=schedule_id,
+        number_of_guests=number_of_guests,
+        total_amount=total_amount,
+        status="PENDING",
+    )
+
+    db.add(booking)
+    db.commit()
+    db.refresh(booking)
+
+    return booking
+
+
+def update_booking_status(
+    db: Session,
+    booking: Booking,
+    status: str,
+) -> Booking:
+    booking.status = status
+
+    db.commit()
+    db.refresh(booking)
+
+    return booking

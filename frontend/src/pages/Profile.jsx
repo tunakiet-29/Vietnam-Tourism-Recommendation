@@ -12,8 +12,7 @@ import { Link } from "react-router-dom";
 
 import {
   getMe,
-  getMyBookings,
-  isAuthenticated,
+  getMyBookings
 } from "../services/api";
 
 function Profile() {
@@ -25,10 +24,6 @@ function Profile() {
 
   useEffect(() => {
     async function loadProfile() {
-      if (!isAuthenticated()) {
-        return;
-      }
-
       try {
         setLoading(true);
         setError("");

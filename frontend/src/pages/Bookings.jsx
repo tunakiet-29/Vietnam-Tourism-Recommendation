@@ -9,14 +9,17 @@ import {
   Users,
   XCircle,
 } from "lucide-react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import {
+  Link,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 
 import {
   cancelBooking,
   getMyBookings,
   getTourById,
   getTourSchedules,
-  isAuthenticated,
 } from "../services/api";
 
 import { destinationImages } from "../data/destinationImages";
@@ -89,8 +92,8 @@ function getStatusConfig(status) {
 }
 
 function Bookings() {
-  const navigate = useNavigate();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -146,18 +149,6 @@ function Bookings() {
   }
 
   useEffect(() => {
-    if (!isAuthenticated()) {
-      navigate("/login", {
-        state: {
-          from: {
-            pathname: "/bookings",
-          },
-        },
-      });
-
-      return;
-    }
-
     loadBookings();
 
     if (location.state?.bookingCreated) {
@@ -170,7 +161,7 @@ function Bookings() {
         state: {},
       });
     }
-  }, []);
+  }, [location.state, navigate]);
 
   async function handleCancelBooking(bookingId) {
     const confirmed = window.confirm(

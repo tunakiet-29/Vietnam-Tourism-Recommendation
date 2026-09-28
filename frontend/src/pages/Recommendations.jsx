@@ -7,12 +7,9 @@ import {
   Sparkles,
   TrendingUp,
 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
-import {
-  getMyRecommendations,
-  isAuthenticated,
-} from "../services/api";
+import { getMyRecommendations } from "../services/api";
 
 import { destinationImages } from "../data/destinationImages";
 
@@ -32,7 +29,6 @@ function getDestinationImage(destination) {
 }
 
 function Recommendations() {
-  const navigate = useNavigate();
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -40,18 +36,6 @@ function Recommendations() {
 
   useEffect(() => {
     async function loadRecommendations() {
-      if (!isAuthenticated()) {
-        navigate("/login", {
-          state: {
-            from: {
-              pathname: "/recommendations",
-            },
-          },
-        });
-
-        return;
-      }
-
       try {
         setLoading(true);
         setError("");
@@ -70,7 +54,7 @@ function Recommendations() {
     }
 
     loadRecommendations();
-  }, [navigate]);
+  }, []);
 
   if (loading) {
     return (

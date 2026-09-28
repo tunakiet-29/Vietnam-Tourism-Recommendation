@@ -17,22 +17,14 @@ import {
 import { destinationImages } from "../data/destinationImages";
 
 const destinationImageMap = {
-  "Nha Trang":
-    destinationImages["nha-trang"],
-  "Sa Pa":
-    destinationImages["sa-pa"],
-  "Hạ Long":
-    destinationImages["ha-long"],
-  "Đà Nẵng":
-    destinationImages["da-nang"],
-  "Đà Lạt":
-    destinationImages["da-lat"],
-  "Phú Quốc":
-    destinationImages["phu-quoc"],
-  "Hội An":
-    destinationImages["hoi-an"],
-  "Huế":
-    destinationImages.hue,
+  "Nha Trang": destinationImages["nha-trang"],
+  "Sa Pa": destinationImages["sa-pa"],
+  "Hạ Long": destinationImages["ha-long"],
+  "Đà Nẵng": destinationImages["da-nang"],
+  "Đà Lạt": destinationImages["da-lat"],
+  "Phú Quốc": destinationImages["phu-quoc"],
+  "Hội An": destinationImages["hoi-an"],
+  "Huế": destinationImages.hue,
 };
 
 function getDestinationImage(destination) {
@@ -86,7 +78,9 @@ function Recommendations() {
         <section className="border-b border-zinc-200 bg-white">
           <div className="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:px-10">
             <div className="h-4 w-32 animate-pulse rounded bg-zinc-100" />
+
             <div className="mt-5 h-12 w-96 max-w-full animate-pulse rounded bg-zinc-100" />
+
             <div className="mt-4 h-5 w-[520px] max-w-full animate-pulse rounded bg-zinc-100" />
           </div>
         </section>
@@ -102,8 +96,11 @@ function Recommendations() {
 
                 <div className="space-y-4 p-6">
                   <div className="h-3 w-24 animate-pulse rounded bg-zinc-100" />
+
                   <div className="h-6 w-2/3 animate-pulse rounded bg-zinc-100" />
+
                   <div className="h-4 w-full animate-pulse rounded bg-zinc-100" />
+
                   <div className="h-10 w-full animate-pulse rounded-xl bg-zinc-100" />
                 </div>
               </div>
@@ -128,6 +125,7 @@ function Recommendations() {
                 strokeWidth={2}
                 className="shrink-0"
               />
+
               <span>Back to Home</span>
             </Link>
 
@@ -157,6 +155,7 @@ function Recommendations() {
               strokeWidth={2}
               className="shrink-0"
             />
+
             <span>Back to Home</span>
           </Link>
 
@@ -246,6 +245,7 @@ function Recommendations() {
             </Link>
           </div>
         ) : (
+          /* RECOMMENDATION LIST */
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {recommendations.map((recommendation, index) => {
               const destination = recommendation.destination;
@@ -276,6 +276,7 @@ function Recommendations() {
                         className="text-[#df6951]"
                         fill="currentColor"
                       />
+
                       Recommended
                     </div>
                   </div>
@@ -292,6 +293,7 @@ function Recommendations() {
 
                     <div className="mt-4 flex items-center gap-2 text-sm text-zinc-500">
                       <TrendingUp size={16} />
+
                       <span>
                         Recommendation score:{" "}
                         {Number(recommendation.score).toFixed(2)}
@@ -299,11 +301,14 @@ function Recommendations() {
                     </div>
 
                     <Link
-                      to="/explore"
+                      to={`/explore?destination=${encodeURIComponent(
+                        destination
+                      )}`}
                       className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-[#df6951] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#cd5b45]"
                     >
                       <Compass size={16} />
-                      Explore tours
+
+                      Explore {destination} tours
                     </Link>
                   </div>
                 </article>

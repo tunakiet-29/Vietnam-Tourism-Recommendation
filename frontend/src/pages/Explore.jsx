@@ -6,10 +6,22 @@ import TourCard from "../components/home/TourCard";
 import { getTours } from "../services/api";
 import { destinationImages } from "../data/destinationImages";
 
+function normalizeText(value = "") {
+  return String(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/gi, "d")
+    .toLowerCase()
+    .trim();
+}
+
 function Explore() {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const destinationFilter = searchParams.get("destination") || "";
+  const destinationFilter =
+    searchParams.get("destination") || "";
+
+  const searchQuery = searchParams.get("search") || "";
 
   const [tours, setTours] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -46,23 +58,74 @@ function Explore() {
   }, []);
 
   const filteredTours = useMemo(() => {
-    if (!destinationFilter) {
-      return tours;
+    let result = tours;
+
+    /*
+     * Destination filter
+     * Example:
+     * /explore?destination=Nha%20Trang
+     */
+    if (destinationFilter) {
+      const normalizedDestination =
+        normalizeText(destinationFilter);
+
+      result = result.filter(
+        (tour) =>
+          normalizeText(tour.destination_name) ===
+          normalizedDestination
+      );
     }
 
-    const normalizedFilter =
-      destinationFilter.trim().toLowerCase();
+    /*
+     * Global search
+     * Search in:
+     * - destination_name
+     * - title
+     */
+    if (searchQuery) {
+      const normalizedSearch = normalizeText(searchQuery);
 
-    return tours.filter(
-      (tour) =>
-        tour.destination_name?.trim().toLowerCase() ===
-        normalizedFilter
-    );
-  }, [tours, destinationFilter]);
+      result = result.filter((tour) => {
+        const destinationName = normalizeText(
+          tour.destination_name
+        );
 
-  function clearDestinationFilter() {
+        const title = normalizeText(tour.title);
+
+        return (
+          destinationName.includes(normalizedSearch) ||
+          title.includes(normalizedSearch)
+        );
+      });
+    }
+
+    return result;
+  }, [tours, destinationFilter, searchQuery]);
+
+  const hasFilter =
+    Boolean(destinationFilter) || Boolean(searchQuery);
+
+  function clearFilters() {
     setSearchParams({});
   }
+
+  const pageTitle = destinationFilter
+    ? `Explore ${destinationFilter}`
+    : searchQuery
+      ? `Search results for "${searchQuery}"`
+      : "Explore your next journey";
+
+  const pageDescription = destinationFilter
+    ? `Discover available tours in ${destinationFilter} and plan your next trip.`
+    : searchQuery
+      ? `Find tours matching "${searchQuery}" across Vietnam.`
+      : "Discover curated tours across Vietnam and find the destination that matches your next adventure.";
+
+  const sectionTitle = destinationFilter
+    ? `${destinationFilter} tours`
+    : searchQuery
+      ? `Results for "${searchQuery}"`
+      : "Find a trip for you";
 
   return (
     <main className="min-h-screen bg-[#faf9f7]">
@@ -79,6 +142,7 @@ function Explore() {
               strokeWidth={2}
               className="shrink-0"
             />
+
             <span>Back to Home</span>
           </Link>
 
@@ -92,15 +156,11 @@ function Explore() {
             </div>
 
             <h1 className="mt-3 text-4xl font-bold tracking-tight text-zinc-900 sm:text-5xl">
-              {destinationFilter
-                ? `Explore ${destinationFilter}`
-                : "Explore your next journey"}
+              {pageTitle}
             </h1>
 
             <p className="mt-4 max-w-2xl text-sm leading-7 text-zinc-500 sm:text-base">
-              {destinationFilter
-                ? `Discover available tours in ${destinationFilter} and plan your next trip.`
-                : "Discover curated tours across Vietnam and find the destination that matches your next adventure."}
+              {pageDescription}
             </p>
           </div>
         </div>
@@ -114,18 +174,18 @@ function Explore() {
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#df6951]">
               {destinationFilter
                 ? "Recommended destination"
-                : "Available tours"}
+                : searchQuery
+                  ? "Search results"
+                  : "Available tours"}
             </p>
 
             <h2 className="mt-2 text-2xl font-bold text-zinc-900 sm:text-3xl">
-              {destinationFilter
-                ? `${destinationFilter} tours`
-                : "Find a trip for you"}
+              {sectionTitle}
             </h2>
           </div>
 
           {!loading && !error && (
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <p className="text-sm text-zinc-400">
                 {filteredTours.length}{" "}
                 {filteredTours.length === 1
@@ -134,10 +194,10 @@ function Explore() {
                 available
               </p>
 
-              {destinationFilter && (
+              {hasFilter && (
                 <button
                   type="button"
-                  onClick={clearDestinationFilter}
+                  onClick={clearFilters}
                   className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 transition hover:border-[#df6951]/40 hover:text-[#df6951]"
                 >
                   <X size={13} />
@@ -203,19 +263,23 @@ function Explore() {
               <h2 className="mt-5 text-xl font-bold text-zinc-900">
                 {destinationFilter
                   ? `No tours found in ${destinationFilter}`
-                  : "No tours available"}
+                  : searchQuery
+                    ? `No tours found for "${searchQuery}"`
+                    : "No tours available"}
               </h2>
 
               <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-zinc-500">
                 {destinationFilter
                   ? "There are currently no available tours for this destination."
-                  : "There are currently no tours available. Please check again later."}
+                  : searchQuery
+                    ? "Try another destination or search term."
+                    : "There are currently no tours available. Please check again later."}
               </p>
 
-              {destinationFilter ? (
+              {hasFilter ? (
                 <button
                   type="button"
-                  onClick={clearDestinationFilter}
+                  onClick={clearFilters}
                   className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#df6951] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#cd5b45]"
                 >
                   <Compass size={16} />

@@ -17,7 +17,7 @@ function SearchBar() {
     }
 
     navigate(
-      `/explore?destination=${encodeURIComponent(value)}`
+      `/explore?search=${encodeURIComponent(value)}`
     );
   }
 
@@ -26,14 +26,12 @@ function SearchBar() {
       onSubmit={handleSearch}
       className="mt-10 flex w-full max-w-4xl items-center gap-4"
     >
-      {/* SEARCH ICON */}
       <Search
         size={25}
         strokeWidth={2}
         className="shrink-0 text-white/70"
       />
 
-      {/* SEARCH INPUT */}
       <div className="flex h-16 flex-1 items-center rounded-2xl border border-white/20 bg-black/25 px-5 shadow-2xl backdrop-blur-xl transition focus-within:border-white/40 focus-within:bg-black/35">
         <input
           type="text"

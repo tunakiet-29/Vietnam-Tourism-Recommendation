@@ -1,29 +1,36 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import DestinationCard from "./DestinationCard";
 import { getDestinations } from "../../services/api";
-
+import ApiErrorState from "../../components/ApiErrorState";
 function PopularDestinations() {
   const [destinations, setDestinations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    async function loadDestinations() {
-      try {
-        const data = await getDestinations();
-        setDestinations(data.slice(0, 4));
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    }
+  const loadDestinations = useCallback(async () => {
+  try {
+    setLoading(true);
+    setError("");
 
-    loadDestinations();
-  }, []);
+    const data = await getDestinations();
+
+    setDestinations(data.slice(0, 4));
+  } catch (err) {
+    setError(
+      err.message ||
+        "Unable to load destinations. Please try again."
+    );
+  } finally {
+    setLoading(false);
+  }
+}, []);
+
+useEffect(() => {
+  loadDestinations();
+}, [loadDestinations]);
 
   return (
     <section className="bg-white">
@@ -67,8 +74,11 @@ function PopularDestinations() {
         )}
 
         {!loading && error && (
-          <div className="mt-10 rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-600">
-            {error}
+          <div className="mt-10">
+            <ApiErrorState
+              message={error}
+              onRetry={loadDestinations}
+            />
           </div>
         )}
 

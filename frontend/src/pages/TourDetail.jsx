@@ -20,7 +20,7 @@ import {
   isAuthenticated,
 } from "../services/api";
 import { destinationImages } from "../data/destinationImages";
-
+import ApiErrorState from "../components/ApiErrorState";
 function TourDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -104,28 +104,28 @@ function TourDetail() {
   }
 
   if (error || !tour) {
-    return (
-      <main className="min-h-screen bg-white px-6 py-12">
-        <div className="mx-auto max-w-7xl">
-          <Link
-            to="/"
-            className="inline-flex items-center gap-2 text-sm font-medium text-zinc-600 hover:text-[#df6951]"
-          >
-            <ArrowLeft
-              size={20}
-              strokeWidth={2}
-              className="shrink-0"
-            />
-            Back to Home
-          </Link>
+  return (
+    <main className="min-h-screen bg-white px-6 py-12">
+      <div className="mx-auto max-w-7xl">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-2 text-sm font-medium text-zinc-600 transition hover:text-[#df6951]"
+        >
+          <ArrowLeft size={16} />
+          Back to Home
+        </Link>
 
-          <div className="mt-8 rounded-2xl border border-red-200 bg-red-50 p-6 text-red-600">
-            {error || "Tour not found."}
-          </div>
+        <div className="mt-8">
+          <ApiErrorState
+            title="Unable to load this tour"
+            message={error || "Tour not found."}
+            onRetry={() => window.location.reload()}
+          />
         </div>
-      </main>
-    );
-  }
+      </div>
+    </main>
+  );
+}
 
   const tourImage =
     tour.image ||

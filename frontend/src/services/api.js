@@ -57,13 +57,26 @@ async function apiRequest(
     ...(authenticated ? getAuthHeaders() : {}),
   };
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  try {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+    });
 
-  return handleResponse(response);
+    return await handleResponse(response);
+  } catch (error) {
+    if (error instanceof TypeError) {
+  throw new Error(
+    "Unable to connect to the server. Please make sure the backend is running and try again.",
+    {
+      cause: error,
+    }
+  );
+}
+
+    throw error;
+  }
 }
 
 export async function register(userData) {

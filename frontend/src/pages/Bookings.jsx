@@ -23,7 +23,7 @@ import {
 } from "../services/api";
 
 import { destinationImages } from "../data/destinationImages";
-
+import ApiErrorState from "../components/ApiErrorState";
 function formatDate(dateString) {
   if (!dateString) {
     return "—";
@@ -241,8 +241,11 @@ function Bookings() {
 
         {/* ERROR MESSAGE */}
         {error && (
-          <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-600">
-            {error}
+          <div className="mb-6">
+            <ApiErrorState
+              message={error}
+              onRetry={loadBookings}
+            />
           </div>
         )}
 

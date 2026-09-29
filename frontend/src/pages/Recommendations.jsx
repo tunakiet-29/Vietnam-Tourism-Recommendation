@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   ArrowLeft,
   Compass,
@@ -12,7 +12,7 @@ import { Link } from "react-router-dom";
 import { getMyRecommendations } from "../services/api";
 
 import { destinationImages } from "../data/destinationImages";
-
+import ApiErrorState from "../components/ApiErrorState";
 const destinationImageMap = {
   "Nha Trang": destinationImages["nha-trang"],
   "Sa Pa": destinationImages["sa-pa"],
@@ -34,27 +34,27 @@ function Recommendations() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    async function loadRecommendations() {
-      try {
-        setLoading(true);
-        setError("");
+  const loadRecommendations = useCallback(async () => {
+  try {
+    setLoading(true);
+    setError("");
 
-        const result = await getMyRecommendations();
+    const result = await getMyRecommendations();
 
-        setData(result);
-      } catch (err) {
-        setError(
-          err.message ||
-            "Unable to load your recommendations. Please try again."
-        );
-      } finally {
-        setLoading(false);
-      }
-    }
+    setData(result);
+  } catch (err) {
+    setError(
+      err.message ||
+        "Unable to load your recommendations. Please try again."
+    );
+  } finally {
+    setLoading(false);
+  }
+}, []);
 
-    loadRecommendations();
-  }, []);
+useEffect(() => {
+  loadRecommendations();
+}, [loadRecommendations]);
 
   if (loading) {
     return (
@@ -96,31 +96,35 @@ function Recommendations() {
   }
 
   if (error) {
-    return (
-      <main className="min-h-screen bg-[#faf9f7]">
-        <section className="border-b border-zinc-200 bg-white">
-          <div className="mx-auto max-w-7xl px-5 py-10 sm:px-8 lg:px-10">
-            <Link
-              to="/"
-              className="inline-flex items-center gap-2 text-sm font-medium text-zinc-600 transition hover:text-[#df6951]"
-            >
-              <ArrowLeft
-                size={20}
-                strokeWidth={2}
-                className="shrink-0"
-              />
+  return (
+    <main className="min-h-screen bg-[#faf9f7]">
+      <section className="border-b border-zinc-200 bg-white">
+        <div className="mx-auto max-w-7xl px-5 py-10 sm:px-8 lg:px-10">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 text-sm font-medium text-zinc-600 transition hover:text-[#df6951]"
+          >
+            <ArrowLeft
+              size={20}
+              strokeWidth={2}
+              className="shrink-0"
+            />
 
-              <span>Back to Home</span>
-            </Link>
+            <span>Back to Home</span>
+          </Link>
 
-            <div className="mt-10 rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-600">
-              {error}
-            </div>
+          <div className="mt-10">
+            <ApiErrorState
+              title="Unable to load recommendations"
+              message={error}
+              onRetry={loadRecommendations}
+            />
           </div>
-        </section>
-      </main>
-    );
-  }
+        </div>
+      </section>
+    </main>
+  );
+}
 
   const recommendations = data?.recommendations || [];
   const history = data?.history || [];

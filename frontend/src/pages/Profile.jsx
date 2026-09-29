@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   ArrowLeft,
   CalendarDays,
@@ -14,7 +14,7 @@ import {
   getMe,
   getMyBookings
 } from "../services/api";
-
+import ApiErrorState from "../components/ApiErrorState";
 function Profile() {
   const [user, setUser] = useState(null);
   const [bookings, setBookings] = useState([]);
@@ -22,31 +22,31 @@ function Profile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    async function loadProfile() {
-      try {
-        setLoading(true);
-        setError("");
+  const loadProfile = useCallback(async () => {
+  try {
+    setLoading(true);
+    setError("");
 
-        const [userData, bookingData] = await Promise.all([
-          getMe(),
-          getMyBookings(),
-        ]);
+    const [userData, bookingData] = await Promise.all([
+      getMe(),
+      getMyBookings(),
+    ]);
 
-        setUser(userData);
-        setBookings(bookingData);
-      } catch (err) {
-        setError(
-          err.message ||
-            "Unable to load your profile. Please try again."
-        );
-      } finally {
-        setLoading(false);
-      }
-    }
+    setUser(userData);
+    setBookings(bookingData);
+  } catch (err) {
+    setError(
+      err.message ||
+        "Unable to load your profile. Please try again."
+    );
+  } finally {
+    setLoading(false);
+  }
+}, []);
 
-    loadProfile();
-  }, []);
+useEffect(() => {
+  loadProfile();
+}, [loadProfile]);
 
   const completedBookings = bookings.filter(
     (booking) => booking.status?.toUpperCase() === "COMPLETED"
@@ -99,28 +99,33 @@ function Profile() {
   }
 
   if (error) {
-    return (
-      <main className="min-h-screen bg-[#faf9f7] px-5 py-10 sm:px-8 lg:px-10">
-        <div className="mx-auto max-w-7xl">
-          <Link
-            to="/"
-            className="inline-flex items-center gap-2 text-sm font-medium text-zinc-600 transition hover:text-[#df6951]"
-          >
-            <ArrowLeft
-              size={20}
-              strokeWidth={2}
-              className="shrink-0"
-            />
-            <span>Back to Home</span>
-          </Link>
+  return (
+    <main className="min-h-screen bg-[#faf9f7] px-5 py-10 sm:px-8 lg:px-10">
+      <div className="mx-auto max-w-7xl">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-2 text-sm font-medium text-zinc-600 transition hover:text-[#df6951]"
+        >
+          <ArrowLeft
+            size={20}
+            strokeWidth={2}
+            className="shrink-0"
+          />
 
-          <div className="mt-10 rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-600">
-            {error}
-          </div>
+          <span>Back to Home</span>
+        </Link>
+
+        <div className="mt-10">
+          <ApiErrorState
+            title="Unable to load your profile"
+            message={error}
+            onRetry={loadProfile}
+          />
         </div>
-      </main>
-    );
-  }
+      </div>
+    </main>
+  );
+}
 
   return (
     <main className="min-h-screen bg-[#faf9f7]">

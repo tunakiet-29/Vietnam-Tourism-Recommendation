@@ -1,10 +1,16 @@
-import { useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { ArrowLeft, Compass, X } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import TourCard from "../components/home/TourCard";
 import { getTours } from "../services/api";
 import { destinationImages } from "../data/destinationImages";
+import ApiErrorState from "../components/ApiErrorState";
 
 function normalizeText(value = "") {
   return String(value)
@@ -27,36 +33,35 @@ function Explore() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    async function fetchTours() {
-      try {
-        setLoading(true);
-        setError("");
+  const fetchTours = useCallback(async () => {
+  try {
+    setLoading(true);
+    setError("");
 
-        const data = await getTours();
+    const data = await getTours();
 
-        const toursWithImages = data.map((tour) => ({
-          ...tour,
-          image:
-            tour.image ||
-            destinationImages[tour.destination_id] ||
-            "",
-        }));
+    const toursWithImages = data.map((tour) => ({
+      ...tour,
+      image:
+        tour.image ||
+        destinationImages[tour.destination_id] ||
+        "",
+    }));
 
-        setTours(toursWithImages);
-      } catch (err) {
-        setError(
-          err.message ||
-            "Unable to load tours. Please try again."
-        );
-      } finally {
-        setLoading(false);
-      }
-    }
+    setTours(toursWithImages);
+  } catch (err) {
+    setError(
+      err.message ||
+        "Unable to load tours. Please try again."
+    );
+  } finally {
+    setLoading(false);
+  }
+}, []);
 
-    fetchTours();
-  }, []);
-
+useEffect(() => {
+  fetchTours();
+}, [fetchTours]);
   const filteredTours = useMemo(() => {
     let result = tours;
 
@@ -210,19 +215,10 @@ function Explore() {
 
         {/* ERROR */}
         {error && (
-          <div className="rounded-2xl border border-red-200 bg-red-50 p-6">
-            <p className="text-sm font-medium text-red-600">
-              {error}
-            </p>
-
-            <button
-              type="button"
-              onClick={() => window.location.reload()}
-              className="mt-4 rounded-xl bg-red-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-600"
-            >
-              Try again
-            </button>
-          </div>
+          <ApiErrorState
+            message={error}
+            onRetry={fetchTours}
+          />
         )}
 
         {/* LOADING */}

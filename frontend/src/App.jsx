@@ -11,6 +11,7 @@ import TourDetail from "./pages/TourDetail";
 import Recommendations from "./pages/Recommendations";
 import Bookings from "./pages/Bookings";
 import Profile from "./pages/Profile";
+import NotFound from "./pages/NotFound";
 
 function App() {
   return (
@@ -40,6 +41,9 @@ function App() {
             element={<Profile />}
           />
         </Route>
+
+        {/* 404 */}
+        <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
   );

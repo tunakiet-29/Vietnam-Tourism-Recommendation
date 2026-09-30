@@ -8,7 +8,7 @@ function Footer() {
           to="/"
           className="font-serif text-2xl font-bold tracking-tight"
         >
-          Travel<span className="text-[#df6951]">.</span>
+          Vietinerary<span className="text-[#df6951]">.</span>
         </Link>
 
         <p className="text-xs text-zinc-400">

@@ -105,7 +105,7 @@ function Navbar() {
           to="/"
           className="font-serif text-3xl font-bold tracking-tight text-white transition-opacity hover:opacity-90"
         >
-          Travel<span className="text-[#df6951]">.</span>
+          Vietinerary<span className="text-[#df6951]">.</span>
         </Link>
 
         {/* DESKTOP NAV */}

@@ -22,6 +22,8 @@ const destinationImageMap = {
   "Phú Quốc": destinationImages["phu-quoc"],
   "Hội An": destinationImages["hoi-an"],
   "Huế": destinationImages.hue,
+  "Hà Nội": destinationImages["ha-noi"],
+  "TP.HCM": destinationImages["tp-hcm"],
 };
 
 function getDestinationImage(destination) {

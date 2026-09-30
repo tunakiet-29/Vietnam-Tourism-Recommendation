@@ -6,6 +6,8 @@ import daLat from "../assets/destinations/da-lat.jpg";
 import hue from "../assets/destinations/hue.jpg";
 import haLong from "../assets/destinations/ha-long.jpg";
 import saPa from "../assets/destinations/sa-pa.jpg";
+import haNoi from "../assets/destinations/ha-noi.jpg";
+import hoChiMinh from "../assets/destinations/tp-hcm.jpg";
 
 export const destinationImages = {
   "da-nang": daNang,
@@ -16,4 +18,6 @@ export const destinationImages = {
   hue,
   "ha-long": haLong,
   "sa-pa": saPa,
+  "ha-noi": haNoi,
+  "tp-hcm": hoChiMinh,
 };

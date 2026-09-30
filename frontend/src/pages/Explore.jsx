@@ -21,6 +21,12 @@ function normalizeText(value = "") {
     .trim();
 }
 
+function normalizeSlug(value = "") {
+  return normalizeText(value)
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 function Explore() {
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -71,15 +77,32 @@ useEffect(() => {
      * /explore?destination=Nha%20Trang
      */
     if (destinationFilter) {
-      const normalizedDestination =
-        normalizeText(destinationFilter);
+  const normalizedDestination =
+    normalizeText(destinationFilter);
 
-      result = result.filter(
-        (tour) =>
-          normalizeText(tour.destination_name) ===
-          normalizedDestination
-      );
-    }
+  const normalizedDestinationSlug =
+    normalizeSlug(destinationFilter);
+
+  result = result.filter((tour) => {
+    const destinationName = normalizeText(
+      tour.destination_name
+    );
+
+    const destinationSlug = normalizeSlug(
+      tour.destination_name
+    );
+
+    const destinationId = normalizeSlug(
+      tour.destination_id
+    );
+
+    return (
+      destinationName === normalizedDestination ||
+      destinationSlug === normalizedDestinationSlug ||
+      destinationId === normalizedDestinationSlug
+    );
+  });
+}
 
     /*
      * Global search

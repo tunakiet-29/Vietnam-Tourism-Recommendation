@@ -10,11 +10,11 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base
 
 if TYPE_CHECKING:
-    from app.models.payment import Payment
+    from app.models.booking import Booking
 
 
-class Booking(Base):
-    __tablename__ = "bookings"
+class Payment(Base):
+    __tablename__ = "payments"
 
     id: Mapped[int] = mapped_column(
         Integer,
@@ -22,33 +22,25 @@ class Booking(Base):
         autoincrement=True,
     )
 
-    user_id: Mapped[int] = mapped_column(
+    booking_id: Mapped[int] = mapped_column(
         Integer,
-        ForeignKey("users.id"),
+        ForeignKey("bookings.id"),
         nullable=False,
         index=True,
     )
 
-    tour_id: Mapped[int] = mapped_column(
-        Integer,
-        ForeignKey("tours.id"),
+    booking: Mapped["Booking"] = relationship(
+        back_populates="payments",
+    )
+
+    txn_ref: Mapped[str] = mapped_column(
+        String(100),
         nullable=False,
+        unique=True,
         index=True,
     )
 
-    schedule_id: Mapped[int] = mapped_column(
-        Integer,
-        ForeignKey("tour_schedules.id"),
-        nullable=False,
-        index=True,
-    )
-
-    number_of_guests: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-    )
-
-    total_amount: Mapped[Decimal] = mapped_column(
+    amount: Mapped[Decimal] = mapped_column(
         Numeric(12, 2),
         nullable=False,
     )
@@ -57,6 +49,31 @@ class Booking(Base):
         String(20),
         default="PENDING",
         nullable=False,
+    )
+
+    vnp_response_code: Mapped[str | None] = mapped_column(
+        String(20),
+        nullable=True,
+    )
+
+    vnp_transaction_status: Mapped[str | None] = mapped_column(
+        String(20),
+        nullable=True,
+    )
+
+    vnp_transaction_no: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+    )
+
+    vnp_bank_code: Mapped[str | None] = mapped_column(
+        String(50),
+        nullable=True,
+    )
+
+    vnp_pay_date: Mapped[str | None] = mapped_column(
+        String(20),
+        nullable=True,
     )
 
     created_at: Mapped[datetime] = mapped_column(
@@ -70,8 +87,4 @@ class Booking(Base):
         default=datetime.utcnow,
         onupdate=datetime.utcnow,
         nullable=False,
-    )
-
-    payments: Mapped[list["Payment"]] = relationship(
-        back_populates="booking",
     )

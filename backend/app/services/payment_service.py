@@ -11,10 +11,13 @@ from zoneinfo import ZoneInfo
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.models.booking import Booking
 from app.models.payment import Payment
 from app.repositories.booking_repository import get_booking_by_id
-from app.repositories.payment_repository import create_payment
+from app.repositories.payment_repository import (
+    create_payment,
+    get_payment_by_txn_ref,
+    update_payment,
+)
 
 
 VN_TIMEZONE = ZoneInfo("Asia/Ho_Chi_Minh")
@@ -34,6 +37,31 @@ def _generate_secure_hash(params: dict[str, str]) -> str:
     ).hexdigest()
 
     return secure_hash
+
+
+def verify_vnpay_signature(
+    params: dict[str, str],
+) -> bool:
+    received_hash = params.get("vnp_SecureHash")
+
+    if not received_hash:
+        return False
+
+    hash_params = {
+        key: value
+        for key, value in params.items()
+        if key not in {
+            "vnp_SecureHash",
+            "vnp_SecureHashType",
+        }
+    }
+
+    calculated_hash = _generate_secure_hash(hash_params)
+
+    return hmac.compare_digest(
+        calculated_hash.lower(),
+        received_hash.lower(),
+    )
 
 
 def _build_vnpay_payment_url(
@@ -119,3 +147,76 @@ def create_vnpay_payment(
     )
 
     return payment, payment_url
+
+
+def process_vnpay_ipn(
+    db: Session,
+    *,
+    params: dict[str, str],
+) -> tuple[str, str]:
+    if not verify_vnpay_signature(params):
+        return "97", "Invalid Signature"
+
+    txn_ref = params.get("vnp_TxnRef")
+
+    if not txn_ref:
+        return "01", "Order not found"
+
+    payment = get_payment_by_txn_ref(
+        db,
+        txn_ref,
+    )
+
+    if payment is None:
+        return "01", "Order not found"
+
+    amount_raw = params.get("vnp_Amount")
+
+    try:
+        vnp_amount = int(amount_raw or "0")
+    except ValueError:
+        return "04", "Invalid Amount"
+
+    expected_amount = int(payment.amount * 100)
+
+    if vnp_amount != expected_amount:
+        return "04", "Invalid Amount"
+
+    if payment.status != "PENDING":
+        return "02", "Order already confirmed"
+
+    response_code = params.get(
+        "vnp_ResponseCode",
+        "",
+    )
+
+    transaction_status = params.get(
+        "vnp_TransactionStatus",
+        "",
+    )
+
+    payment_status = (
+        "PAID"
+        if response_code == "00"
+        and transaction_status == "00"
+        else "FAILED"
+    )
+
+    update_payment(
+        db,
+        payment=payment,
+        status=payment_status,
+        vnp_response_code=response_code,
+        vnp_transaction_status=transaction_status,
+        vnp_transaction_no=params.get(
+            "vnp_TransactionNo"
+        ),
+        vnp_bank_code=params.get(
+            "vnp_BankCode"
+        ),
+        vnp_pay_date=params.get(
+            "vnp_PayDate"
+        ),
+    )
+
+    return "00", "Confirm Success"

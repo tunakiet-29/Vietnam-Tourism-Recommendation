@@ -46,3 +46,27 @@ def create_payment(
     db.refresh(payment)
 
     return payment
+
+
+def update_payment(
+    db: Session,
+    *,
+    payment: Payment,
+    status: str,
+    vnp_response_code: str | None = None,
+    vnp_transaction_status: str | None = None,
+    vnp_transaction_no: str | None = None,
+    vnp_bank_code: str | None = None,
+    vnp_pay_date: str | None = None,
+) -> Payment:
+    payment.status = status
+    payment.vnp_response_code = vnp_response_code
+    payment.vnp_transaction_status = vnp_transaction_status
+    payment.vnp_transaction_no = vnp_transaction_no
+    payment.vnp_bank_code = vnp_bank_code
+    payment.vnp_pay_date = vnp_pay_date
+
+    db.commit()
+    db.refresh(payment)
+
+    return payment

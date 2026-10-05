@@ -14,6 +14,7 @@ import {
 } from "react-router-dom";
 
 import {
+  createVnpayPayment,
   createBooking,
   getTourById,
   getTourSchedules,
@@ -195,27 +196,38 @@ function TourDetail() {
     }
 
     setBookingLoading(true);
+    let createdBooking = null;
 
     try {
-      const booking = await createBooking({
+      createdBooking = await createBooking({
         tour_id: tour.id,
         schedule_id: selectedSchedule.id,
         number_of_guests: numberOfGuests,
       });
 
-      setBookingSuccess(
-        `Booking #${booking.id} created successfully.`
+      const payment = await createVnpayPayment(
+        createdBooking.id
       );
 
-      setTimeout(() => {
-        navigate("/bookings", {
-          state: {
-            bookingCreated: true,
-            bookingId: booking.id,
-          },
-        });
-      }, 1000);
+      window.location.assign(payment.payment_url);
     } catch (err) {
+      if (createdBooking) {
+        setBookingSuccess(
+          `Booking #${createdBooking.id} was created. Please complete the payment from My Bookings.`
+        );
+
+        setTimeout(() => {
+          navigate("/bookings", {
+            state: {
+              bookingCreated: true,
+              bookingId: createdBooking.id,
+            },
+          });
+        }, 1000);
+
+        return;
+      }
+
       setBookingError(
         err.message ||
           "Unable to complete your booking. Please try again."

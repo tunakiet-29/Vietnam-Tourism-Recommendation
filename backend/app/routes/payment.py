@@ -4,9 +4,13 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.models.user import User
-from app.schemas.payment import PaymentResponse
+from app.schemas.payment import (
+    PaymentResponse,
+    PaymentStatusResponse,
+)
 from app.services.payment_service import (
     create_vnpay_payment,
+    get_user_payment_status,
     process_vnpay_ipn,
 )
 
@@ -71,4 +75,36 @@ def create_vnpay_payment_endpoint(
         amount=payment.amount,
         status=payment.status,
         payment_url=payment_url,
+    )
+
+
+@router.get(
+    "/{txn_ref}",
+    response_model=PaymentStatusResponse,
+)
+def get_payment_status(
+    txn_ref: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> PaymentStatusResponse:
+    try:
+        payment = get_user_payment_status(
+            db,
+            user_id=current_user.id,
+            txn_ref=txn_ref,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail=str(exc),
+        ) from exc
+
+    return PaymentStatusResponse(
+        id=payment.id,
+        booking_id=payment.booking_id,
+        txn_ref=payment.txn_ref,
+        amount=payment.amount,
+        status=payment.status,
+        created_at=payment.created_at,
+        updated_at=payment.updated_at,
     )

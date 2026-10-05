@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from sqlalchemy.orm import Session
@@ -7,13 +8,45 @@ from sqlalchemy.orm import Session
 from app.models.booking import Booking
 from app.models.tour import Tour
 from app.models.tour_schedule import TourSchedule
+from app.core.config import settings
 from app.repositories.booking_repository import (
     create_booking,
     get_booking_by_id,
     get_bookings_by_user,
+    get_expired_pending_bookings,
     update_booking_status,
 )
 from app.schemas.booking import BookingCreate
+
+
+def _utc_now() -> datetime:
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+def expire_pending_bookings(db: Session) -> int:
+    expired_bookings = get_expired_pending_bookings(
+        db,
+        _utc_now(),
+    )
+
+    if not expired_bookings:
+        return 0
+
+    for booking in expired_bookings:
+        schedule = db.get(TourSchedule, booking.schedule_id)
+
+        if schedule is not None:
+            schedule.available_slots += booking.number_of_guests
+
+        booking.status = "EXPIRED"
+
+        for payment in booking.payments:
+            if payment.status == "PENDING":
+                payment.status = "EXPIRED"
+
+    db.commit()
+
+    return len(expired_bookings)
 
 
 def create_user_booking(
@@ -21,6 +54,8 @@ def create_user_booking(
     user_id: int,
     booking_data: BookingCreate,
 ) -> Booking:
+    expire_pending_bookings(db)
+
     tour = db.get(Tour, booking_data.tour_id)
 
     if tour is None or not tour.is_active:
@@ -50,6 +85,10 @@ def create_user_booking(
         * Decimal(booking_data.number_of_guests)
     )
 
+    expires_at = _utc_now() + timedelta(
+        minutes=settings.payment_expire_minutes
+    )
+
     schedule.available_slots -= booking_data.number_of_guests
 
     booking = create_booking(
@@ -59,6 +98,7 @@ def create_user_booking(
         schedule_id=schedule.id,
         number_of_guests=booking_data.number_of_guests,
         total_amount=total_amount,
+        expires_at=expires_at,
     )
 
     return booking
@@ -68,6 +108,8 @@ def get_user_bookings(
     db: Session,
     user_id: int,
 ) -> list[Booking]:
+    expire_pending_bookings(db)
+
     return get_bookings_by_user(
         db,
         user_id,
@@ -79,6 +121,8 @@ def get_user_booking_detail(
     user_id: int,
     booking_id: int,
 ) -> Booking:
+    expire_pending_bookings(db)
+
     booking = get_booking_by_id(
         db,
         booking_id,
@@ -104,9 +148,9 @@ def cancel_user_booking(
         booking_id,
     )
 
-    if booking.status not in {"PENDING", "CONFIRMED"}:
+    if booking.status != "PENDING":
         raise ValueError(
-            "Only pending or confirmed bookings can be cancelled."
+            "Only unpaid pending bookings can be cancelled."
         )
 
     schedule = db.get(
@@ -118,6 +162,10 @@ def cancel_user_booking(
         raise ValueError("Tour schedule not found.")
 
     schedule.available_slots += booking.number_of_guests
+
+    for payment in booking.payments:
+        if payment.status == "PENDING":
+            payment.status = "CANCELLED"
 
     return update_booking_status(
         db,

@@ -17,6 +17,7 @@ import {
 
 import {
   cancelBooking,
+  createVnpayPayment,
   getMyBookings,
   getTourById,
   getTourSchedules,
@@ -82,6 +83,13 @@ function getStatusConfig(status) {
         icon: XCircle,
       };
 
+    case "EXPIRED":
+      return {
+        label: "Expired",
+        className: "bg-zinc-100 text-zinc-500",
+        icon: Clock3,
+      };
+
     default:
       return {
         label: status || "Unknown",
@@ -102,6 +110,7 @@ function Bookings() {
   const [successMessage, setSuccessMessage] = useState("");
 
   const [cancellingId, setCancellingId] = useState(null);
+  const [paymentLoadingId, setPaymentLoadingId] = useState(null);
 
   async function loadBookings() {
     setLoading(true);
@@ -191,6 +200,23 @@ function Bookings() {
       );
     } finally {
       setCancellingId(null);
+    }
+  }
+
+  async function handlePayment(bookingId) {
+    setPaymentLoadingId(bookingId);
+    setError("");
+    setSuccessMessage("");
+
+    try {
+      const payment = await createVnpayPayment(bookingId);
+      window.location.assign(payment.payment_url);
+    } catch (err) {
+      setError(
+        err.message ||
+          "Unable to start the payment. Please try again."
+      );
+      setPaymentLoadingId(null);
     }
   }
 
@@ -428,8 +454,22 @@ function Bookings() {
                         View tour
                       </Link>
 
-                      {booking.status !== "CANCELLED" &&
-                        booking.status !== "COMPLETED" && (
+                      {booking.status === "PENDING" && (
+                        <button
+                          type="button"
+                          onClick={() => handlePayment(booking.id)}
+                          disabled={
+                            paymentLoadingId === booking.id
+                          }
+                          className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#df6951] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#cf5d47] disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {paymentLoadingId === booking.id
+                            ? "Redirecting..."
+                            : "Pay now"}
+                        </button>
+                      )}
+
+                      {booking.status === "PENDING" && (
                           <button
                             type="button"
                             onClick={() =>

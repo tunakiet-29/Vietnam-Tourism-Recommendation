@@ -51,6 +51,11 @@ class Payment(Base):
         nullable=False,
     )
 
+    checkout_url: Mapped[str | None] = mapped_column(
+        String(2048),
+        nullable=True,
+    )
+
     vnp_response_code: Mapped[str | None] = mapped_column(
         String(20),
         nullable=True,

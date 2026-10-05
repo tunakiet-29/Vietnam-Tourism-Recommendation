@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -22,6 +24,22 @@ def get_bookings_by_user(
         select(Booking)
         .where(Booking.user_id == user_id)
         .order_by(Booking.created_at.desc())
+    )
+
+    return list(db.scalars(statement).all())
+
+
+def get_expired_pending_bookings(
+    db: Session,
+    expires_before: datetime,
+) -> list[Booking]:
+    statement = (
+        select(Booking)
+        .where(
+            Booking.status == "PENDING",
+            Booking.expires_at.is_not(None),
+            Booking.expires_at <= expires_before,
+        )
     )
 
     return list(db.scalars(statement).all())
@@ -67,6 +85,7 @@ def create_booking(
     schedule_id: int,
     number_of_guests: int,
     total_amount,
+    expires_at: datetime,
 ) -> Booking:
     booking = Booking(
         user_id=user_id,
@@ -75,6 +94,7 @@ def create_booking(
         number_of_guests=number_of_guests,
         total_amount=total_amount,
         status="PENDING",
+        expires_at=expires_at,
     )
 
     db.add(booking)

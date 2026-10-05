@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from urllib.parse import urlencode
 from zoneinfo import ZoneInfo
@@ -19,8 +19,10 @@ from app.repositories.booking_repository import (
 from app.repositories.payment_repository import (
     create_payment,
     get_payment_by_txn_ref,
+    get_pending_payment_by_booking_id,
     update_payment,
 )
+from app.services.booking_service import expire_pending_bookings
 
 
 VN_TIMEZONE = ZoneInfo("Asia/Ho_Chi_Minh")
@@ -73,6 +75,7 @@ def _build_vnpay_payment_url(
     amount: Decimal,
     order_info: str,
     client_ip: str,
+    expires_at: datetime | None,
 ) -> str:
     create_date = datetime.now(VN_TIMEZONE).strftime(
         "%Y%m%d%H%M%S"
@@ -95,6 +98,14 @@ def _build_vnpay_payment_url(
         "vnp_CreateDate": create_date,
     }
 
+    if expires_at is not None:
+        expires_at_vn = expires_at.replace(
+            tzinfo=timezone.utc
+        ).astimezone(VN_TIMEZONE)
+        params["vnp_ExpireDate"] = expires_at_vn.strftime(
+            "%Y%m%d%H%M%S"
+        )
+
     secure_hash = _generate_secure_hash(params)
 
     params["vnp_SecureHash"] = secure_hash
@@ -111,6 +122,8 @@ def create_vnpay_payment(
     booking_id: int,
     client_ip: str,
 ) -> tuple[Payment, str]:
+    expire_pending_bookings(db)
+
     booking = get_booking_by_id(
         db,
         booking_id,
@@ -124,9 +137,24 @@ def create_vnpay_payment(
             "You cannot access this booking."
         )
 
-    if booking.status not in {"PENDING", "CONFIRMED"}:
+    if booking.status != "PENDING":
         raise ValueError(
             "This booking cannot be paid."
+        )
+
+    active_payment = get_pending_payment_by_booking_id(
+        db,
+        booking.id,
+    )
+
+    if active_payment is not None and active_payment.checkout_url:
+        return active_payment, active_payment.checkout_url
+
+    if active_payment is not None:
+        update_payment(
+            db,
+            payment=active_payment,
+            status="EXPIRED",
         )
 
     txn_ref = _generate_txn_ref(booking.id)
@@ -140,6 +168,7 @@ def create_vnpay_payment(
         amount=booking.total_amount,
         order_info=order_info,
         client_ip=client_ip,
+        expires_at=booking.expires_at,
     )
 
     payment = create_payment(
@@ -147,9 +176,37 @@ def create_vnpay_payment(
         booking_id=booking.id,
         txn_ref=txn_ref,
         amount=booking.total_amount,
+        checkout_url=payment_url,
     )
 
     return payment, payment_url
+
+
+def get_user_payment_status(
+    db: Session,
+    *,
+    user_id: int,
+    txn_ref: str,
+) -> Payment:
+    expire_pending_bookings(db)
+
+    payment = get_payment_by_txn_ref(
+        db,
+        txn_ref,
+    )
+
+    if payment is None:
+        raise ValueError("Payment not found.")
+
+    booking = get_booking_by_id(
+        db,
+        payment.booking_id,
+    )
+
+    if booking is None or booking.user_id != user_id:
+        raise ValueError("You cannot access this payment.")
+
+    return payment
 
 
 def process_vnpay_ipn(
@@ -172,6 +229,8 @@ def process_vnpay_ipn(
 
     if payment is None:
         return "01", "Order not found"
+
+    expire_pending_bookings(db)
 
     amount_raw = params.get("vnp_Amount")
 

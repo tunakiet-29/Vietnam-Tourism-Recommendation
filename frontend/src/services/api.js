@@ -159,6 +159,19 @@ export async function cancelBooking(bookingId) {
   });
 }
 
+export async function createVnpayPayment(bookingId) {
+  return apiRequest(`/payments/vnpay/${bookingId}`, {
+    method: "POST",
+    authenticated: true,
+  });
+}
+
+export async function getPaymentStatus(txnRef) {
+  return apiRequest(`/payments/${encodeURIComponent(txnRef)}`, {
+    authenticated: true,
+  });
+}
+
 export async function getMyRecommendations() {
   return apiRequest("/recommendations/me", {
     authenticated: true,

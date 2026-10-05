@@ -27,18 +27,36 @@ def get_payment_by_txn_ref(
     return db.scalars(statement).first()
 
 
+def get_pending_payment_by_booking_id(
+    db: Session,
+    booking_id: int,
+) -> Payment | None:
+    statement = (
+        select(Payment)
+        .where(
+            Payment.booking_id == booking_id,
+            Payment.status == "PENDING",
+        )
+        .order_by(Payment.created_at.desc())
+    )
+
+    return db.scalars(statement).first()
+
+
 def create_payment(
     db: Session,
     *,
     booking_id: int,
     txn_ref: str,
     amount: Decimal,
+    checkout_url: str,
 ) -> Payment:
     payment = Payment(
         booking_id=booking_id,
         txn_ref=txn_ref,
         amount=amount,
         status="PENDING",
+        checkout_url=checkout_url,
     )
 
     db.add(payment)

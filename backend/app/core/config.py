@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     vnpay_payment_url: str
     vnpay_return_url: str
     vnpay_ipn_url: str
+    payment_expire_minutes: int = 15
+    payment_expiry_check_interval_seconds: int = 60
 
     model_config = SettingsConfigDict(
         env_file=".env",

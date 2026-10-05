@@ -11,6 +11,7 @@ import TourDetail from "./pages/TourDetail";
 import Recommendations from "./pages/Recommendations";
 import Bookings from "./pages/Bookings";
 import Profile from "./pages/Profile";
+import PaymentResult from "./pages/PaymentResult";
 import NotFound from "./pages/NotFound";
 
 function App() {
@@ -23,6 +24,7 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/explore" element={<Explore />} />
         <Route path="/tours/:id" element={<TourDetail />} />
+        <Route path="/payment/result" element={<PaymentResult />} />
 
         {/* Protected routes */}
         <Route element={<ProtectedRoute />}>

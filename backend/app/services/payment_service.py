@@ -12,7 +12,10 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.models.payment import Payment
-from app.repositories.booking_repository import get_booking_by_id
+from app.repositories.booking_repository import (
+    get_booking_by_id,
+    update_booking_status,
+)
 from app.repositories.payment_repository import (
     create_payment,
     get_payment_by_txn_ref,
@@ -182,9 +185,6 @@ def process_vnpay_ipn(
     if vnp_amount != expected_amount:
         return "04", "Invalid Amount"
 
-    if payment.status != "PENDING":
-        return "02", "Order already confirmed"
-
     response_code = params.get(
         "vnp_ResponseCode",
         "",
@@ -195,10 +195,34 @@ def process_vnpay_ipn(
         "",
     )
 
+    is_success = (
+        response_code == "00"
+        and transaction_status == "00"
+    )
+
+    # Payment đã được xử lý trước đó.
+    # Nếu đã PAID thì không xử lý lại giao dịch.
+    if payment.status != "PENDING":
+        # Đảm bảo Booking đã được CONFIRMED nếu
+        # Payment đã PAID nhưng lần trước chưa đồng bộ Booking.
+        if payment.status == "PAID":
+            booking = get_booking_by_id(
+                db,
+                payment.booking_id,
+            )
+
+            if booking is not None and booking.status == "PENDING":
+                update_booking_status(
+                    db,
+                    booking,
+                    "CONFIRMED",
+                )
+
+        return "02", "Order already confirmed"
+
     payment_status = (
         "PAID"
-        if response_code == "00"
-        and transaction_status == "00"
+        if is_success
         else "FAILED"
     )
 
@@ -218,5 +242,22 @@ def process_vnpay_ipn(
             "vnp_PayDate"
         ),
     )
+
+    # Chỉ xác nhận Booking khi thanh toán thành công.
+    if payment_status == "PAID":
+        booking = get_booking_by_id(
+            db,
+            payment.booking_id,
+        )
+
+        if booking is not None and booking.status in {
+            "PENDING",
+            "CONFIRMED",
+        }:
+            update_booking_status(
+                db,
+                booking,
+                "CONFIRMED",
+            )
 
     return "00", "Confirm Success"

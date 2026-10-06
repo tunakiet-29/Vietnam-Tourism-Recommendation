@@ -2,6 +2,7 @@ import { Routes, Route } from "react-router-dom";
 
 import MainLayout from "./layouts/MainLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AdminRoute from "./components/AdminRoute";
 
 import Home from "./pages/Home";
 import Login from "./pages/Login";
@@ -12,6 +13,7 @@ import Recommendations from "./pages/Recommendations";
 import Bookings from "./pages/Bookings";
 import Profile from "./pages/Profile";
 import PaymentResult from "./pages/PaymentResult";
+import AdminBookings from "./pages/AdminBookings";
 import NotFound from "./pages/NotFound";
 
 function App() {
@@ -42,6 +44,13 @@ function App() {
             path="/profile"
             element={<Profile />}
           />
+
+          <Route element={<AdminRoute />}>
+            <Route
+              path="/admin/bookings"
+              element={<AdminBookings />}
+            />
+          </Route>
         </Route>
 
         {/* 404 */}

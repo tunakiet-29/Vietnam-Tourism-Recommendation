@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   CalendarDays,
+  ClipboardList,
   ChevronDown,
   Compass,
   Heart,
@@ -143,6 +144,19 @@ function Navbar() {
           >
             Recommendations
           </button>
+
+          {user?.role === "admin" && (
+            <Link
+              to="/admin/bookings"
+              className={`relative text-sm transition ${
+                isActive("/admin/bookings")
+                  ? "font-medium text-white after:absolute after:-bottom-3 after:left-1/2 after:h-[3px] after:w-7 after:-translate-x-1/2 after:rounded-full after:bg-[#df6951]"
+                  : "text-white/75 hover:text-white"
+              }`}
+            >
+              Admin
+            </Link>
+          )}
 
           <button
             type="button"
@@ -330,6 +344,16 @@ function Navbar() {
                   Profile
                 </Link>
 
+                {user.role === "admin" && (
+                  <Link
+                    to="/admin/bookings"
+                    className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-white/75 transition hover:bg-white/5 hover:text-white"
+                  >
+                    <ClipboardList size={16} />
+                    Admin bookings
+                  </Link>
+                )}
+
                 <button
                   type="button"
                   onClick={handleLogout}
@@ -338,6 +362,16 @@ function Navbar() {
                   <LogOut size={17} />
                   Logout
                 </button>
+
+            {user?.role === "admin" && (
+              <Link
+                to="/admin/bookings"
+                className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm text-white/80 transition hover:bg-white/10 hover:text-white"
+              >
+                <ClipboardList size={17} />
+                Admin bookings
+              </Link>
+            )}
               </>
             ) : (
               <div className="grid grid-cols-2 gap-3 px-4">

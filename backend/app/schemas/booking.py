@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class BookingCreate(BaseModel):
@@ -24,3 +24,12 @@ class BookingResponse(BaseModel):
     status: str
     created_at: datetime
     updated_at: datetime
+
+
+class AdminBookingResponse(BookingResponse):
+    customer_name: str
+    customer_email: EmailStr
+    tour_title: str
+    departure_date: date | None
+    payment_status: str | None
+    payment_txn_ref: str | None

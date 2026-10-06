@@ -13,6 +13,7 @@ from app.routes.recommendations import router as recommendations_router
 from app.services.recommendation_service import get_model_info
 from app.routes.api_v1 import router as api_v1_router
 from app.routes.auth import router as auth_router
+from app.routes.admin import router as admin_router
 from app.routes.booking import router as booking_router
 from app.routes.payment import router as payment_router
 from app.routes.tour import router as tour_router
@@ -81,6 +82,7 @@ app.include_router(destinations_router)
 app.include_router(recommendations_router)
 app.include_router(api_v1_router)
 app.include_router(auth_router)
+app.include_router(admin_router)
 app.include_router(tour_router)
 app.include_router(booking_router)
 app.include_router(payment_router)

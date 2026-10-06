@@ -2,12 +2,13 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.models.booking import Booking
 from app.models.destination import Destination
 from app.models.tour import Tour
+from app.models.user import User
 
 def get_booking_by_id(
     db: Session,
@@ -41,6 +42,36 @@ def get_expired_pending_bookings(
             Booking.expires_at <= expires_before,
         )
     )
+
+    return list(db.scalars(statement).all())
+
+
+def get_admin_bookings(
+    db: Session,
+    *,
+    status: str | None = None,
+    search: str | None = None,
+) -> list[Booking]:
+    statement = select(Booking).join(User)
+
+    if status:
+        statement = statement.where(Booking.status == status)
+
+    if search:
+        normalized_search = search.strip()
+
+        if normalized_search:
+            filters = [
+                User.full_name.ilike(f"%{normalized_search}%"),
+                User.email.ilike(f"%{normalized_search}%"),
+            ]
+
+            if normalized_search.isdigit():
+                filters.append(Booking.id == int(normalized_search))
+
+            statement = statement.where(or_(*filters))
+
+    statement = statement.order_by(Booking.created_at.desc())
 
     return list(db.scalars(statement).all())
 

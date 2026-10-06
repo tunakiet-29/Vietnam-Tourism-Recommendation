@@ -172,6 +172,29 @@ export async function getPaymentStatus(txnRef) {
   });
 }
 
+export async function getAdminBookings(filters = {}) {
+  const searchParams = new URLSearchParams();
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value) {
+      searchParams.set(key, value);
+    }
+  });
+
+  const query = searchParams.toString();
+
+  return apiRequest(`/admin/bookings${query ? `?${query}` : ""}`, {
+    authenticated: true,
+  });
+}
+
+export async function completeAdminBooking(bookingId) {
+  return apiRequest(`/admin/bookings/${bookingId}/complete`, {
+    method: "PATCH",
+    authenticated: true,
+  });
+}
+
 export async function getMyRecommendations() {
   return apiRequest("/recommendations/me", {
     authenticated: true,

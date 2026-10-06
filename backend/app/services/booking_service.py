@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 
 from sqlalchemy.orm import Session
@@ -8,13 +8,18 @@ from sqlalchemy.orm import Session
 from app.models.booking import Booking
 from app.models.tour import Tour
 from app.models.tour_schedule import TourSchedule
+from app.models.user import User
 from app.core.config import settings
 from app.repositories.booking_repository import (
     create_booking,
     get_booking_by_id,
     get_bookings_by_user,
+    get_admin_bookings,
     get_expired_pending_bookings,
     update_booking_status,
+)
+from app.repositories.payment_repository import (
+    get_latest_payment_by_booking_id,
 )
 from app.schemas.booking import BookingCreate
 
@@ -172,3 +177,100 @@ def cancel_user_booking(
         booking,
         "CANCELLED",
     )
+
+
+def get_admin_booking_list(
+    db: Session,
+    *,
+    status: str | None = None,
+    payment_status: str | None = None,
+    search: str | None = None,
+) -> list[dict]:
+    expire_pending_bookings(db)
+
+    bookings = get_admin_bookings(
+        db,
+        status=status,
+        search=search,
+    )
+    results = []
+
+    for booking in bookings:
+        payment = get_latest_payment_by_booking_id(
+            db,
+            booking.id,
+        )
+
+        if payment_status and (
+            payment is None or payment.status != payment_status
+        ):
+            continue
+
+        user = db.get(User, booking.user_id)
+        tour = db.get(Tour, booking.tour_id)
+        schedule = db.get(TourSchedule, booking.schedule_id)
+
+        if user is None or tour is None:
+            continue
+
+        results.append(
+            {
+                "id": booking.id,
+                "user_id": booking.user_id,
+                "tour_id": booking.tour_id,
+                "schedule_id": booking.schedule_id,
+                "number_of_guests": booking.number_of_guests,
+                "total_amount": booking.total_amount,
+                "status": booking.status,
+                "created_at": booking.created_at,
+                "updated_at": booking.updated_at,
+                "customer_name": user.full_name,
+                "customer_email": user.email,
+                "tour_title": tour.title,
+                "departure_date": (
+                    schedule.departure_date
+                    if schedule is not None
+                    else None
+                ),
+                "payment_status": (
+                    payment.status if payment is not None else None
+                ),
+                "payment_txn_ref": (
+                    payment.txn_ref if payment is not None else None
+                ),
+            }
+        )
+
+    return results
+
+
+def complete_admin_booking(
+    db: Session,
+    booking_id: int,
+) -> Booking:
+    booking = get_booking_by_id(db, booking_id)
+
+    if booking is None:
+        raise ValueError("Booking not found.")
+
+    if booking.status != "CONFIRMED":
+        raise ValueError(
+            "Only confirmed bookings can be completed."
+        )
+
+    tour = db.get(Tour, booking.tour_id)
+    schedule = db.get(TourSchedule, booking.schedule_id)
+
+    if tour is None or schedule is None:
+        raise ValueError("Tour schedule not found.")
+
+    tour_end_date = schedule.departure_date + timedelta(
+        days=max(tour.duration_days - 1, 0)
+    )
+
+    if date.today() < tour_end_date:
+        raise ValueError(
+            "The tour cannot be completed before its end date."
+        )
+
+    return update_booking_status(db, booking, "COMPLETED")

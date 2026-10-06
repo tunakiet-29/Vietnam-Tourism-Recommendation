@@ -43,6 +43,19 @@ def get_pending_payment_by_booking_id(
     return db.scalars(statement).first()
 
 
+def get_latest_payment_by_booking_id(
+    db: Session,
+    booking_id: int,
+) -> Payment | None:
+    statement = (
+        select(Payment)
+        .where(Payment.booking_id == booking_id)
+        .order_by(Payment.created_at.desc())
+    )
+
+    return db.scalars(statement).first()
+
+
 def create_payment(
     db: Session,
     *,

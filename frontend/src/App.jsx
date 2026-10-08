@@ -15,7 +15,7 @@ import Profile from "./pages/Profile";
 import PaymentResult from "./pages/PaymentResult";
 import AdminBookings from "./pages/AdminBookings";
 import NotFound from "./pages/NotFound";
-
+import AdminTours from "./pages/AdminTours";
 function App() {
   return (
     <Routes>
@@ -53,6 +53,15 @@ function App() {
           </Route>
         </Route>
 
+        <Route
+            path="/admin/tours"
+            element={<AdminTours />}
+        />
+
+        <Route
+            path="/admin/bookings"
+            element={<AdminBookings />}
+        />
         {/* 404 */}
         <Route path="*" element={<NotFound />} />
       </Route>

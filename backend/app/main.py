@@ -20,7 +20,7 @@ from app.routes.tour import router as tour_router
 from app.core.config import settings
 from app.core.database import SessionLocal
 from app.services.booking_service import expire_pending_bookings
-
+from app.routes.admin_tour import router as admin_tour_router
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +86,7 @@ app.include_router(admin_router)
 app.include_router(tour_router)
 app.include_router(booking_router)
 app.include_router(payment_router)
-
+app.include_router(admin_tour_router)
 
 @app.get("/health")
 def health() -> dict[str, str]:

@@ -195,6 +195,77 @@ export async function completeAdminBooking(bookingId) {
   });
 }
 
+export async function getAdminTours(filters = {}) {
+  const searchParams = new URLSearchParams();
+
+  if (filters.search?.trim()) {
+    searchParams.set("search", filters.search.trim());
+  }
+
+  if (filters.status) {
+    searchParams.set("status", filters.status);
+  }
+
+  if (
+    filters.is_active !== "" &&
+    filters.is_active !== undefined &&
+    filters.is_active !== null
+  ) {
+    searchParams.set("is_active", String(filters.is_active));
+  }
+
+  if (filters.destination_id?.trim()) {
+    searchParams.set(
+      "destination_id",
+      filters.destination_id.trim()
+    );
+  }
+
+  const query = searchParams.toString();
+
+  return apiRequest(
+    `/admin/tours${query ? `?${query}` : ""}`,
+    {
+      authenticated: true,
+    }
+  );
+}
+
+export async function getAdminTourById(tourId) {
+  return apiRequest(`/admin/tours/${tourId}`, {
+    authenticated: true,
+  });
+}
+
+export async function createAdminTour(tourData) {
+  return apiRequest("/admin/tours", {
+    method: "POST",
+    body: tourData,
+    authenticated: true,
+  });
+}
+
+export async function updateAdminTour(tourId, tourData) {
+  return apiRequest(`/admin/tours/${tourId}`, {
+    method: "PUT",
+    body: tourData,
+    authenticated: true,
+  });
+}
+
+export async function updateAdminTourStatus(
+  tourId,
+  isActive
+) {
+  return apiRequest(`/admin/tours/${tourId}/status`, {
+    method: "PATCH",
+    body: {
+      is_active: isActive,
+    },
+    authenticated: true,
+  });
+}
+
 export async function getMyRecommendations() {
   return apiRequest("/recommendations/me", {
     authenticated: true,

@@ -1,3 +1,4 @@
+
 import { Routes, Route } from "react-router-dom";
 
 import MainLayout from "./layouts/MainLayout";
@@ -13,9 +14,11 @@ import Recommendations from "./pages/Recommendations";
 import Bookings from "./pages/Bookings";
 import Profile from "./pages/Profile";
 import PaymentResult from "./pages/PaymentResult";
+import AdminLogin from "./pages/AdminLogin";
 import AdminBookings from "./pages/AdminBookings";
-import NotFound from "./pages/NotFound";
 import AdminTours from "./pages/AdminTours";
+import NotFound from "./pages/NotFound";
+
 function App() {
   return (
     <Routes>
@@ -26,42 +29,45 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/explore" element={<Explore />} />
         <Route path="/tours/:id" element={<TourDetail />} />
-        <Route path="/payment/result" element={<PaymentResult />} />
+        <Route
+          path="/payment/result"
+          element={<PaymentResult />}
+        />
 
-        {/* Protected routes */}
+        {/* Admin login */}
+        <Route
+          path="/admin/login"
+          element={<AdminLogin />}
+        />
+
+        {/* Regular authenticated routes */}
         <Route element={<ProtectedRoute />}>
           <Route
             path="/recommendations"
             element={<Recommendations />}
           />
-
           <Route
             path="/bookings"
             element={<Bookings />}
           />
-
           <Route
             path="/profile"
             element={<Profile />}
           />
-
-          <Route element={<AdminRoute />}>
-            <Route
-              path="/admin/bookings"
-              element={<AdminBookings />}
-            />
-          </Route>
         </Route>
 
-        <Route
+        {/* Admin-only routes */}
+        <Route element={<AdminRoute />}>
+          <Route
             path="/admin/tours"
             element={<AdminTours />}
-        />
-
-        <Route
+          />
+          <Route
             path="/admin/bookings"
             element={<AdminBookings />}
-        />
+          />
+        </Route>
+
         {/* 404 */}
         <Route path="*" element={<NotFound />} />
       </Route>

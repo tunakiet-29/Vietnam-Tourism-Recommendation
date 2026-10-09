@@ -1,42 +1,80 @@
+
 import { useEffect, useState } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 
-import { getMe } from "../services/api";
+import {
+  getMe,
+  isAuthenticated,
+  logout,
+} from "../services/api";
 
 function AdminRoute() {
   const location = useLocation();
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [accessState, setAccessState] = useState("checking");
 
   useEffect(() => {
     let isMounted = true;
 
-    async function loadUser() {
+    async function verifyAdminAccess() {
+      if (!isAuthenticated()) {
+        if (isMounted) {
+          setAccessState("unauthenticated");
+        }
+        return;
+      }
+
       try {
         const currentUser = await getMe();
 
         if (isMounted) {
-          setUser(currentUser);
+          setAccessState(
+            currentUser?.role === "admin"
+              ? "authorized"
+              : "forbidden"
+          );
         }
-      } finally {
+      } catch {
+        logout();
+
         if (isMounted) {
-          setLoading(false);
+          setAccessState("unauthenticated");
         }
       }
     }
 
-    loadUser();
+    verifyAdminAccess();
 
     return () => {
       isMounted = false;
     };
   }, []);
 
-  if (loading) {
-    return null;
+  if (accessState === "checking") {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#faf9f7] px-5">
+        <p className="text-sm text-zinc-500">
+          Verifying administrator access...
+        </p>
+      </main>
+    );
   }
 
-  if (user?.role !== "admin") {
+  if (accessState === "unauthenticated") {
+    return (
+      <Navigate
+        to="/admin/login"
+        replace
+        state={{
+          from: {
+            pathname: location.pathname,
+            search: location.search,
+          },
+        }}
+      />
+    );
+  }
+
+  if (accessState === "forbidden") {
     return (
       <Navigate
         to="/"

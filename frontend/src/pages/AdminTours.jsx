@@ -19,7 +19,7 @@ import {
   updateAdminTourStatus,
 } from "../services/api";
 import ApiErrorState from "../components/ApiErrorState";
-
+import { destinationImages } from "../data/destinationImages";
 const INITIAL_FORM = {
   title: "",
   description: "",
@@ -61,7 +61,55 @@ function createFormFromTour(tour) {
     image: tour.image ?? "",
   };
 }
+function TourCardImage({ tour }) {
+  const fallbackImage =
+    destinationImages[tour.destination_id] || "";
 
+  const originalImage =
+    typeof tour.image === "string"
+      ? tour.image.trim()
+      : "";
+
+  const [imageSrc, setImageSrc] = useState(
+    originalImage || fallbackImage
+  );
+
+  const [imageFailed, setImageFailed] = useState(false);
+
+  useEffect(() => {
+    setImageSrc(originalImage || fallbackImage);
+    setImageFailed(false);
+  }, [originalImage, fallbackImage]);
+
+  function handleImageError() {
+    if (fallbackImage && imageSrc !== fallbackImage) {
+      setImageSrc(fallbackImage);
+      return;
+    }
+
+    setImageFailed(true);
+  }
+
+  if (!imageSrc || imageFailed) {
+    return (
+      <div className="flex h-full w-full items-center justify-center text-zinc-400">
+        <div className="text-center">
+          <ImageOff size={28} className="mx-auto" />
+          <p className="mt-2 text-sm">No image</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={imageSrc}
+      alt={tour.title}
+      className="h-full w-full object-cover"
+      onError={handleImageError}
+    />
+  );
+}
 function AdminTours() {
   const [tours, setTours] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -686,18 +734,19 @@ function AdminTours() {
                         className="h-full w-full object-cover"
                       />
                     ) : (
-                      <div className="flex h-full items-center justify-center text-zinc-400">
-                        <div className="text-center">
-                          <ImageOff
-                            size={28}
-                            className="mx-auto"
-                          />
+                      <div className="relative h-56 bg-zinc-100">
+                        <TourCardImage tour={tour} />
 
-                          <p className="mt-2 text-sm">
-                            No image
-                          </p>
-                        </div>
-                      </div>
+                        <span
+                          className={`absolute left-4 top-4 rounded-full px-3 py-1.5 text-xs font-semibold backdrop-blur ${
+                            tour.is_active
+                              ? "bg-white/90 text-emerald-700"
+                              : "bg-zinc-900/75 text-white"
+                          }`}
+                        >
+                        {tour.is_active ? "Active" : "Inactive"}
+                        </span>
+                    </div>
                     )}
 
                     <span

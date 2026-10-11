@@ -232,6 +232,12 @@ def get_admin_booking_list(
                     if schedule is not None
                     else None
                 ),
+                "tour_end_date": (
+                    schedule.departure_date
+                    + timedelta(days=max(tour.duration_days - 1, 0))
+                    if schedule is not None
+                    else None
+            ),
                 "payment_status": (
                     payment.status if payment is not None else None
                 ),

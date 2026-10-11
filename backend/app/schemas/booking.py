@@ -31,5 +31,6 @@ class AdminBookingResponse(BookingResponse):
     customer_email: EmailStr
     tour_title: str
     departure_date: date | None
+    tour_end_date: date | None
     payment_status: str | None
     payment_txn_ref: str | None

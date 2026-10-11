@@ -32,7 +32,30 @@ function formatCurrency(value) {
     ? "—"
     : `${amount.toLocaleString("vi-VN")} ₫`;
 }
+function getLocalDateString() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
 
+  return `${year}-${month}-${day}`;
+}
+function canMarkBookingCompleted(booking) {
+  console.log("Complete eligibility:", {
+  id: booking.id,
+  status: booking.status,
+  tour_end_date: booking.tour_end_date,
+  today: getLocalDateString(),
+  eligible: booking.status === "CONFIRMED" &&
+    Boolean(booking.tour_end_date) &&
+    booking.tour_end_date <= getLocalDateString(),
+});
+  return (
+    booking.status === "CONFIRMED" &&
+    Boolean(booking.tour_end_date) &&
+    booking.tour_end_date <= getLocalDateString()
+  );
+}
 function AdminBookings() {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -184,26 +207,38 @@ function AdminBookings() {
                     </p>
                   </div>
 
-                  {booking.status === "CONFIRMED" && (
-                    <button
-                      type="button"
-                      onClick={() => handleComplete(booking.id)}
-                      disabled={completingId === booking.id}
-                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#df6951] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#cf5d47] disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {completingId === booking.id ? (
-                        <>
-                          <Loader2 size={16} className="animate-spin" />
-                          Updating...
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle2 size={16} />
-                          Complete tour
-                        </>
-                      )}
-                    </button>
-                  )}
+                 {booking.status === "CONFIRMED" && (
+  <div className="flex flex-col items-start gap-2 lg:items-end">
+    {canMarkBookingCompleted(booking) ? (
+      <button
+        type="button"
+        onClick={() => handleComplete(booking.id)}
+        disabled={completingId === booking.id}
+        className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#df6951] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#cf5d47] disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {completingId === booking.id ? (
+          <>
+            <Loader2 size={16} className="animate-spin" />
+            Updating...
+          </>
+        ) : (
+          <>
+            <CheckCircle2 size={16} />
+            Mark as COMPLETED
+          </>
+        )}
+      </button>
+    ) : (
+      <p className="max-w-xs text-sm leading-6 text-zinc-400 lg:text-right">
+        {booking.tour_end_date
+          ? `Can be marked COMPLETED after ${formatDate(
+              booking.tour_end_date
+            )}.`
+          : "Tour end date is unavailable."}
+      </p>
+    )}
+  </div>
+)}
                 </div>
 
                 <div className="mt-5 grid gap-4 rounded-xl bg-zinc-50 p-4 text-sm sm:grid-cols-4">

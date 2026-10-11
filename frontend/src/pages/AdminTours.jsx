@@ -19,6 +19,7 @@ import {
   updateAdminTourStatus,
 } from "../services/api";
 import ApiErrorState from "../components/ApiErrorState";
+import AdminNavigation from "../components/AdminNavigation";
 import { destinationImages } from "../data/destinationImages";
 const INITIAL_FORM = {
   title: "",
@@ -256,25 +257,25 @@ function AdminTours() {
     }
 
     try {
-      if (editingTour) {
-        await updateAdminTour(
-          editingTour.id,
-          payload
-        );
-      } else {
-        await createAdminTour(payload);
-      }
+  if (editingTour) {
+    await updateAdminTour(editingTour.id, payload);
+  } else {
+    await createAdminTour(payload);
+  }
 
-      closeForm();
-      await loadTours();
-    } catch (err) {
-      setFormError(
-        err.message ||
-          "Unable to save this tour."
-      );
-    } finally {
-      setSaving(false);
-    }
+  setShowForm(false);
+  setEditingTour(null);
+  setForm(INITIAL_FORM);
+  setFormError("");
+
+  await loadTours();
+} catch (err) {
+  setFormError(
+    err.message || "Unable to save this tour."
+  );
+} finally {
+  setSaving(false);
+}
   }
 
   async function handleToggleStatus(tour) {
@@ -302,6 +303,7 @@ function AdminTours() {
 
   return (
     <main className="min-h-screen bg-[#faf9f7]">
+      <AdminNavigation />
       {/* HEADER */}
       <section className="border-b border-zinc-200 bg-white">
         <div className="mx-auto max-w-7xl px-5 py-12 sm:px-8 lg:px-10">

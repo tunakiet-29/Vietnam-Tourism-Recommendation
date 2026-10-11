@@ -1,8 +1,9 @@
+
 import { useEffect, useState } from "react";
 import {
   CalendarDays,
-  ClipboardList,
   ChevronDown,
+  ClipboardList,
   Compass,
   Heart,
   LogOut,
@@ -11,6 +12,7 @@ import {
   X,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+
 import {
   getMe,
   isAuthenticated,
@@ -24,6 +26,7 @@ function Navbar() {
   const [user, setUser] = useState(null);
   const [loadingUser, setLoadingUser] = useState(true);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [managementOpen, setManagementOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   async function loadUser() {
@@ -56,12 +59,16 @@ function Navbar() {
     window.addEventListener("auth-changed", handleAuthChanged);
 
     return () => {
-      window.removeEventListener("auth-changed", handleAuthChanged);
+      window.removeEventListener(
+        "auth-changed",
+        handleAuthChanged
+      );
     };
   }, []);
 
   useEffect(() => {
     setProfileOpen(false);
+    setManagementOpen(false);
     setMobileOpen(false);
   }, [location.pathname]);
 
@@ -69,12 +76,20 @@ function Navbar() {
     logout();
     setUser(null);
     setProfileOpen(false);
+    setManagementOpen(false);
     setMobileOpen(false);
     navigate("/");
   }
 
   function isActive(path) {
     return location.pathname === path;
+  }
+
+  function isAdminPage() {
+    return (
+      location.pathname === "/admin" ||
+      location.pathname.startsWith("/admin/")
+    );
   }
 
   function handleProtectedRoute(path) {
@@ -98,6 +113,13 @@ function Navbar() {
     user?.email?.charAt(0)?.toUpperCase() ||
     "U";
 
+  const navLinkClass = (path) =>
+    `relative text-sm transition ${
+      isActive(path)
+        ? "font-medium text-white after:absolute after:-bottom-3 after:left-1/2 after:h-[3px] after:w-7 after:-translate-x-1/2 after:rounded-full after:bg-[#df6951]"
+        : "text-white/75 hover:text-white"
+    }`;
+
   return (
     <nav className="relative z-30 mx-auto w-[calc(100%-40px)] max-w-7xl lg:w-[calc(100%-80px)]">
       <div className="flex min-h-[92px] items-center justify-between">
@@ -111,61 +133,96 @@ function Navbar() {
 
         {/* DESKTOP NAV */}
         <div className="hidden items-center gap-8 md:flex">
-          <Link
-            to="/"
-            className={`relative text-sm font-medium transition ${
-              isActive("/")
-                ? "text-white after:absolute after:-bottom-3 after:left-1/2 after:h-[3px] after:w-7 after:-translate-x-1/2 after:rounded-full after:bg-[#df6951]"
-                : "text-white/75 hover:text-white"
-            }`}
-          >
+          <Link to="/" className={navLinkClass("/")}>
             Home
           </Link>
 
-          <Link
-            to="/explore"
-            className={`relative text-sm transition ${
-              isActive("/explore")
-                ? "font-medium text-white after:absolute after:-bottom-3 after:left-1/2 after:h-[3px] after:w-7 after:-translate-x-1/2 after:rounded-full after:bg-[#df6951]"
-                : "text-white/75 hover:text-white"
-            }`}
-          >
+          <Link to="/explore" className={navLinkClass("/explore")}>
             Explore
           </Link>
 
           <button
             type="button"
-            onClick={() => handleProtectedRoute("/recommendations")}
-            className={`relative text-sm transition ${
-              isActive("/recommendations")
-                ? "font-medium text-white after:absolute after:-bottom-3 after:left-1/2 after:h-[3px] after:w-7 after:-translate-x-1/2 after:rounded-full after:bg-[#df6951]"
-                : "text-white/75 hover:text-white"
-            }`}
+            onClick={() =>
+              handleProtectedRoute("/recommendations")
+            }
+            className={navLinkClass("/recommendations")}
           >
             Recommendations
           </button>
 
+          {/* ADMIN MANAGEMENT */}
           {user?.role === "admin" && (
-            <Link
-              to="/admin/bookings"
-              className={`relative text-sm transition ${
-                isActive("/admin/bookings")
-                  ? "font-medium text-white after:absolute after:-bottom-3 after:left-1/2 after:h-[3px] after:w-7 after:-translate-x-1/2 after:rounded-full after:bg-[#df6951]"
-                  : "text-white/75 hover:text-white"
-              }`}
-            >
-              Admin
-            </Link>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() =>
+                  setManagementOpen((previous) => !previous)
+                }
+                aria-expanded={managementOpen}
+                aria-haspopup="menu"
+                className={`flex items-center gap-2 text-sm transition ${
+                  isAdminPage()
+                    ? "font-medium text-white"
+                    : "text-white/75 hover:text-white"
+                }`}
+              >
+                <ClipboardList size={16} />
+                Management
+                <ChevronDown
+                  size={15}
+                  className={`transition-transform ${
+                    managementOpen ? "rotate-180" : ""
+                  }`}
+                />
+                {isAdminPage() && (
+                  <span className="absolute -bottom-3 left-1/2 h-[3px] w-7 -translate-x-1/2 rounded-full bg-[#df6951]" />
+                )}
+              </button>
+
+              {managementOpen && (
+                <div
+                  role="menu"
+                  className="absolute left-0 top-[calc(100%+18px)] w-60 overflow-hidden rounded-xl border border-white/10 bg-zinc-950/95 p-2 shadow-2xl backdrop-blur-xl"
+                >
+                  <p className="px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">
+                    Administration
+                  </p>
+
+                  <Link
+                    to="/admin/tours"
+                    role="menuitem"
+                    className={`flex items-center gap-3 rounded-lg px-3 py-3 text-sm transition ${
+                      isActive("/admin/tours")
+                        ? "bg-[#df6951]/15 text-[#df6951]"
+                        : "text-white/75 hover:bg-white/5 hover:text-white"
+                    }`}
+                  >
+                    <Compass size={17} />
+                    Tour Management
+                  </Link>
+
+                  <Link
+                    to="/admin/bookings"
+                    role="menuitem"
+                    className={`flex items-center gap-3 rounded-lg px-3 py-3 text-sm transition ${
+                      isActive("/admin/bookings")
+                        ? "bg-[#df6951]/15 text-[#df6951]"
+                        : "text-white/75 hover:bg-white/5 hover:text-white"
+                    }`}
+                  >
+                    <CalendarDays size={17} />
+                    Booking Management
+                  </Link>
+                </div>
+              )}
+            </div>
           )}
 
           <button
             type="button"
             onClick={() => handleProtectedRoute("/bookings")}
-            className={`relative text-sm transition ${
-              isActive("/bookings")
-                ? "font-medium text-white after:absolute after:-bottom-3 after:left-1/2 after:h-[3px] after:w-7 after:-translate-x-1/2 after:rounded-full after:bg-[#df6951]"
-                : "text-white/75 hover:text-white"
-            }`}
+            className={navLinkClass("/bookings")}
           >
             My Bookings
           </button>
@@ -176,12 +233,12 @@ function Navbar() {
           {loadingUser ? (
             <div className="hidden h-10 w-28 animate-pulse rounded-lg bg-white/10 sm:block" />
           ) : user ? (
-            /* LOGGED IN */
             <div className="relative hidden sm:block">
               <button
                 type="button"
-                onClick={() => setProfileOpen((prev) => !prev)}
+                onClick={() => setProfileOpen((previous) => !previous)}
                 className="flex items-center gap-2 rounded-lg border border-white/15 bg-white/10 px-2 py-2 backdrop-blur-md transition hover:bg-white/15"
+                aria-expanded={profileOpen}
               >
                 <span className="flex h-8 w-8 items-center justify-center rounded-md bg-[#df6951] text-xs font-bold text-white">
                   {userInitial}
@@ -235,6 +292,32 @@ function Navbar() {
                     Recommendations
                   </Link>
 
+                  {user.role === "admin" && (
+                    <>
+                      <div className="my-2 h-px bg-white/10" />
+
+                      <p className="px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">
+                        Management
+                      </p>
+
+                      <Link
+                        to="/admin/tours"
+                        className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-white/75 transition hover:bg-white/5 hover:text-white"
+                      >
+                        <Compass size={16} />
+                        Tour Management
+                      </Link>
+
+                      <Link
+                        to="/admin/bookings"
+                        className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-white/75 transition hover:bg-white/5 hover:text-white"
+                      >
+                        <ClipboardList size={16} />
+                        Booking Management
+                      </Link>
+                    </>
+                  )}
+
                   <div className="my-2 h-px bg-white/10" />
 
                   <button
@@ -249,7 +332,6 @@ function Navbar() {
               )}
             </div>
           ) : (
-            /* LOGGED OUT */
             <>
               <Link
                 to="/login"
@@ -270,9 +352,10 @@ function Navbar() {
           {/* MOBILE BUTTON */}
           <button
             type="button"
-            onClick={() => setMobileOpen((prev) => !prev)}
+            onClick={() => setMobileOpen((previous) => !previous)}
             className="rounded-lg border border-white/15 bg-white/10 p-2.5 text-white backdrop-blur-md transition hover:bg-white/15 md:hidden"
             aria-label="Toggle menu"
+            aria-expanded={mobileOpen}
           >
             {mobileOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
@@ -300,7 +383,9 @@ function Navbar() {
 
             <button
               type="button"
-              onClick={() => handleProtectedRoute("/recommendations")}
+              onClick={() =>
+                handleProtectedRoute("/recommendations")
+              }
               className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm text-white/80 transition hover:bg-white/10 hover:text-white"
             >
               <Heart size={17} />
@@ -338,40 +423,56 @@ function Navbar() {
 
                 <Link
                   to="/profile"
-                  className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm text-white/80 hover:bg-white/10 hover:text-white"
+                  className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm text-white/80 transition hover:bg-white/10 hover:text-white"
                 >
                   <User size={17} />
                   Profile
                 </Link>
 
                 {user.role === "admin" && (
-                  <Link
-                    to="/admin/bookings"
-                    className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-white/75 transition hover:bg-white/5 hover:text-white"
-                  >
-                    <ClipboardList size={16} />
-                    Admin bookings
-                  </Link>
+                  <>
+                    <div className="my-3 h-px bg-white/10" />
+
+                    <p className="px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">
+                      Management
+                    </p>
+
+                    <Link
+                      to="/admin/tours"
+                      className={`flex items-center gap-3 rounded-lg px-4 py-3 text-sm transition hover:bg-white/10 hover:text-white ${
+                        isActive("/admin/tours")
+                          ? "bg-white/10 text-white"
+                          : "text-white/80"
+                      }`}
+                    >
+                      <Compass size={17} />
+                      Tour Management
+                    </Link>
+
+                    <Link
+                      to="/admin/bookings"
+                      className={`flex items-center gap-3 rounded-lg px-4 py-3 text-sm transition hover:bg-white/10 hover:text-white ${
+                        isActive("/admin/bookings")
+                          ? "bg-white/10 text-white"
+                          : "text-white/80"
+                      }`}
+                    >
+                      <ClipboardList size={17} />
+                      Booking Management
+                    </Link>
+                  </>
                 )}
+
+                <div className="my-3 h-px bg-white/10" />
 
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm text-red-400 hover:bg-red-400/10"
+                  className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm text-red-400 transition hover:bg-red-400/10"
                 >
                   <LogOut size={17} />
                   Logout
                 </button>
-
-            {user?.role === "admin" && (
-              <Link
-                to="/admin/bookings"
-                className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm text-white/80 transition hover:bg-white/10 hover:text-white"
-              >
-                <ClipboardList size={17} />
-                Admin bookings
-              </Link>
-            )}
               </>
             ) : (
               <div className="grid grid-cols-2 gap-3 px-4">

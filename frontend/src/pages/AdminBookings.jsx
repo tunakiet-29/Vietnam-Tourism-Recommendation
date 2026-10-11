@@ -12,7 +12,7 @@ import {
   getAdminBookings,
 } from "../services/api";
 import ApiErrorState from "../components/ApiErrorState";
-
+import AdminNavigation from "../components/AdminNavigation";
 function formatDate(value) {
   if (!value) {
     return "—";
@@ -109,6 +109,7 @@ function AdminBookings() {
 
   return (
     <main className="min-h-screen bg-[#faf9f7]">
+      <AdminNavigation />
       <section className="border-b border-zinc-200 bg-white">
         <div className="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:px-10">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#df6951]">

@@ -1,5 +1,7 @@
 from __future__ import annotations
+from threading import RLock
 
+import pandas as pd
 import pickle
 from pathlib import Path
 from typing import Any
@@ -12,19 +14,12 @@ CHECKPOINT_PATH = (
     / "models"
     / "Vietnam_TourBookings_FPGrowth_Recommendation_V1_Checkpoint.pkl"
 )
+_MODEL_LOCK = RLock()
 
 
-def load_checkpoint() -> dict[str, Any]:
-    """Load and validate the FP-Growth recommendation checkpoint."""
-    if not CHECKPOINT_PATH.exists():
-        raise FileNotFoundError(
-            "FP-Growth checkpoint was not found. "
-            f"Expected file: {CHECKPOINT_PATH}"
-        )
-
-    with CHECKPOINT_PATH.open("rb") as file:
-        checkpoint = pickle.load(file)
-
+def _validate_checkpoint(
+    checkpoint: Any,
+) -> dict[str, Any]:
     if not isinstance(checkpoint, dict):
         raise TypeError("Checkpoint must be a dictionary.")
 
@@ -35,7 +30,7 @@ def load_checkpoint() -> dict[str, Any]:
         "recommendation_policy",
     }
 
-    missing = required_keys - checkpoint.keys()
+    missing = required_keys - set(checkpoint.keys())
 
     if missing:
         raise KeyError(
@@ -47,12 +42,66 @@ def load_checkpoint() -> dict[str, Any]:
             f"Unexpected checkpoint algorithm: {checkpoint['algorithm']}"
         )
 
+    itemsets = checkpoint["fpgrowth_filtered"]
+
+    if not isinstance(itemsets, pd.DataFrame):
+        raise TypeError(
+            "'fpgrowth_filtered' must be a pandas DataFrame."
+        )
+
+    required_columns = {
+        "itemset",
+        "itemset_length",
+        "support",
+        "user_count",
+    }
+
+    missing_columns = required_columns - set(itemsets.columns)
+
+    if missing_columns:
+        raise ValueError(
+            "Frequent itemsets are missing columns: "
+            f"{sorted(missing_columns)}"
+        )
+
     return checkpoint
 
 
+def load_checkpoint(
+    checkpoint_path: Path = CHECKPOINT_PATH,
+) -> dict[str, Any]:
+    """Load and validate an FP-Growth recommendation checkpoint."""
+    if not checkpoint_path.exists():
+        raise FileNotFoundError(
+            "FP-Growth checkpoint was not found. "
+            f"Expected file: {checkpoint_path}"
+        )
+
+    with checkpoint_path.open("rb") as file:
+        checkpoint = pickle.load(file)
+
+    return _validate_checkpoint(checkpoint)
+
 CHECKPOINT = load_checkpoint()
 FPGROWTH_FILTERED = CHECKPOINT["fpgrowth_filtered"]
+def reload_checkpoint(
+    checkpoint: dict[str, Any] | None = None,
+) -> None:
+    """
+    Safely activate a validated checkpoint in memory.
 
+    If no checkpoint is supplied, load it from the active file.
+    """
+    global CHECKPOINT, FPGROWTH_FILTERED
+
+    if checkpoint is None:
+        new_checkpoint = load_checkpoint()
+    else:
+        new_checkpoint = _validate_checkpoint(checkpoint)
+
+    with _MODEL_LOCK:
+        CHECKPOINT = new_checkpoint
+        FPGROWTH_FILTERED = new_checkpoint["fpgrowth_filtered"]
 
 def parse_itemset(itemset_string: str) -> set[str]:
     """Convert an itemset string such as '{Đà Nẵng, Huế}' into a set."""
@@ -98,6 +147,8 @@ def recommend_fpgrowth(
         }
 
     history_set = set(cleaned_history)
+    with _MODEL_LOCK:
+        fpgrowth_filtered = FPGROWTH_FILTERED
 
     # Full pattern -> shorter suffix -> ... -> length 1
     for pattern_length in range(len(cleaned_history), 0, -1):
@@ -106,7 +157,7 @@ def recommend_fpgrowth(
 
         matched_rows: list[dict[str, Any]] = []
 
-        for _, row in FPGROWTH_FILTERED.iterrows():
+        for _, row in fpgrowth_filtered.iterrows():
             items = parse_itemset(row["itemset"])
 
             if pattern_set.issubset(items) and len(items) > pattern_length:
@@ -178,12 +229,26 @@ def recommend_fpgrowth(
 
 
 def get_model_info() -> dict[str, Any]:
-    """Return metadata about the loaded FP-Growth recommendation model."""
+    """Return metadata about the currently loaded FP-Growth model."""
+    with _MODEL_LOCK:
+        checkpoint = CHECKPOINT
+        itemsets = FPGROWTH_FILTERED
+
     return {
-        "stage": CHECKPOINT["stage"],
-        "algorithm": CHECKPOINT["algorithm"],
-        "min_support": CHECKPOINT.get("min_support"),
-        "max_itemset_length": CHECKPOINT.get("max_itemset_length"),
-        "top_k": CHECKPOINT.get("top_k"),
-        "frequent_itemset_count": int(len(FPGROWTH_FILTERED)),
+        "stage": checkpoint["stage"],
+        "algorithm": checkpoint["algorithm"],
+        "created_at": checkpoint.get("created_at"),
+        "min_support": checkpoint.get("min_support"),
+        "max_itemset_length": checkpoint.get("max_itemset_length"),
+        "top_k": checkpoint.get("top_k"),
+        "frequent_itemset_count": int(len(itemsets)),
+        "base_transaction_count": checkpoint.get(
+            "base_transaction_count"
+        ),
+        "live_user_transaction_count": checkpoint.get(
+            "live_user_transaction_count"
+        ),
+        "training_transaction_count": checkpoint.get(
+            "training_transaction_count"
+        ),
     }

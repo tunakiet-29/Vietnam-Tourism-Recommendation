@@ -1,4 +1,4 @@
-# Vietinerary — Vietnam Tourism Recommendation Platform
+# 🧭 Vietinerary — Vietnam Tourism Recommendation Platform
 
 Vietinerary is a full-stack tourism platform for discovering Vietnamese destinations, exploring tours, managing bookings, and receiving personalized travel recommendations. Its recommendation API uses an FP-Growth model trained on historical travel transactions and eligible completed bookings from the application database.
 
@@ -17,9 +17,9 @@ Vietinerary is a full-stack tourism platform for discovering Vietnamese destinat
 - [API overview](#api-overview)
 - [Future work](#future-work)
 
-## Highlights
+## ✨ Highlights
 
-### Traveler experience
+### 🧳 Traveler experience
 
 - Browse destinations and explore available tours.
 - Register, sign in, and view an account profile.
@@ -27,12 +27,12 @@ Vietinerary is a full-stack tourism platform for discovering Vietnamese destinat
 - Create, view, and cancel bookings.
 - Pay for bookings through the VNPay integration and check payment status.
 
-### Administration
+### 🛠️ Administration
 
 - Manage tours, including creating and editing tour information and changing tour availability.
 - Review bookings, filter booking records, and mark eligible bookings as completed.
 
-### Recommendation and model training
+### 🤖 Recommendation and model training
 
 - Generate recommendations with FP-Growth frequent itemsets and suffix-pattern backoff.
 - Rank candidate destinations deterministically and exclude destinations already present in the travel history.
@@ -42,25 +42,31 @@ Vietinerary is a full-stack tourism platform for discovering Vietnamese destinat
 - Validate a newly generated checkpoint before replacing the active checkpoint. If training fails, the existing model remains available.
 - Periodically expire eligible pending bookings.
 
-## Screenshots
-
-Add screenshots under `docs/images/`, then uncomment and update the corresponding Markdown image links below. Avoid including personal information, payment credentials, or other sensitive data in screenshots.
-
+## 📸 Screenshots
 
 ![Home page](docs/images/home-page.png)
+*The landing page introduces the platform and highlights destinations and tours.*
+
 ![Tour discovery and details](docs/images/tour-discovery.png)
+*Browse available tours and review the selected tour's information.*
+
 ![Personalized recommendations](docs/images/recommendations.png)
+*Explore destination suggestions generated from the traveler's completed-trip history.*
+
 ![Booking and payment flow](docs/images/booking-payment.png)
+*View booking details and follow the payment flow.*
+
 ![Administration — tours and bookings](docs/images/admin-dashboard.png)
+*Administrators can review bookings and manage tour listings.*
 
 
-## System architecture
+## 🏗️ System architecture
 
 ![Vietinerary system architecture](docs/system-architecture.png)
 
 For the Mermaid source and additional flow notes, see [the system architecture document](docs/system-architecture.md).
 
-## Technology stack
+## 🧰 Technology stack
 
 | Area | Technologies |
 |---|---|
@@ -70,7 +76,7 @@ For the Mermaid source and additional flow notes, see [the system architecture d
 | Recommendation | FP-Growth, pandas, mlxtend |
 | Payments | VNPay payment redirect and server-to-server IPN callback |
 
-## Repository structure
+## 📁 Repository structure
 
 ```text
 .
@@ -99,15 +105,15 @@ For the Mermaid source and additional flow notes, see [the system architecture d
 └── README.md
 ```
 
-## Getting started
+## 🚀 Getting started
 
-### Prerequisites
+### ✅ Prerequisites
 
 - Python and Node.js/npm installed.
 - A VNPay sandbox account and callback URL if you want to test the payment flow.
 - The historical training dataset and a valid model checkpoint in the locations shown in the repository structure. The training task also requires access to the application database.
 
-### 1. Configure and start the backend
+### 1. ⚙️ Configure and start the backend
 
 Open PowerShell at the repository root:
 
@@ -128,7 +134,7 @@ uvicorn app.main:app --reload
 
 The backend is available at `http://127.0.0.1:8000`. Interactive API documentation is available at `http://127.0.0.1:8000/docs`.
 
-### 2. Start the frontend
+### 2. 🌐 Start the frontend
 
 Open a second PowerShell window at the repository root:
 
@@ -140,7 +146,7 @@ npm run dev
 
 Open the local URL printed by Vite, usually `http://localhost:5173`. The frontend currently sends API requests to `http://127.0.0.1:8000`.
 
-### Useful development commands
+### 🧪 Useful development commands
 
 Run these commands from the `frontend` directory:
 
@@ -149,7 +155,7 @@ npm run lint
 npm run build
 ```
 
-## Configuration
+## 🔐 Configuration
 
 The backend reads its settings from `backend/.env`. Never commit real secrets. Set the required values for your environment:
 
@@ -175,7 +181,7 @@ PAYMENT_EXPIRY_CHECK_INTERVAL_SECONDS=60
 
 Use the VNPay URLs and credentials issued for your own sandbox or production account. VNPay must be able to reach the configured IPN URL; local development typically requires a public tunnel. Do not expose or commit `.env` files.
 
-## Recommendation model
+## 🧠 Recommendation model
 
 The model training service reads completed historical transactions from `backend/data/processed/Vietnam_TourBookings_Filtered_V1.csv` and groups eligible live `COMPLETED` bookings by user. `CONFIRMED` bookings are not included until their status becomes `COMPLETED`.
 
@@ -190,7 +196,7 @@ The CSV remains unchanged; live bookings are read from the database for each tra
 
 > The hourly task runs inside the application process. Running multiple backend instances can trigger duplicate training jobs; production deployments should use a single scheduler or a dedicated job queue.
 
-## API overview
+## 🔌 API overview
 
 The complete interactive schema is available at `/docs` while the backend is running.
 
@@ -215,7 +221,7 @@ The complete interactive schema is available at `/docs` while the backend is run
 
 Most `/api/v1` endpoints require authentication. Administrative endpoints also require an administrator account.
 
-## Future work
+## 🔮 Future work
 
 The following are potential enhancements, not claims about currently implemented features:
 
@@ -226,6 +232,6 @@ The following are potential enhancements, not claims about currently implemented
 - Expand the administrator dashboard with reporting and booking analytics.
 - Improve accessibility, responsive behavior, and user-facing localization.
 
-## License
+## 📄 License
 
 Add the project's license and attribution details here before publishing or redistributing the repository.
